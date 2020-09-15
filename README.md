@@ -18,16 +18,18 @@ Clean the build environment:
 
 ## Run
 
+Run with default settings:
+
 `consul-snapshot`
 
-Example: Run every 10 seconds and save the snapshot to the current directory
+Run every 10 seconds and save the snapshot to the current directory
 
 `consul-snapshot --cron "@every 10s" --local.destination-path "." --outputs "local"`
 
 Usage:
 
 ```text
-Usage:
+Usage of consul-snapshot:
       --azure-blob.container-name string       The name of the Azure Blob container to use
       --azure-blob.container-path string       The path to use inside the Azure Blob container
       --azure-blob.storage-access-key string   The Azure Blob storage access key to use
@@ -39,8 +41,8 @@ Usage:
       --cron string                            The cron expression to define when to run (default "@every 1h")
       --file-extension string                  The file extension to use in the snapshot name (default ".snap")
       --filename-prefix string                 The prefix to use in the snapshot name (default "consul-snapshot-")
-      --local.destination-path string          The local path where to save the snapshots
-      --outputs strings                        The list of outputs to push the snapshot to
+      --local.destination-path string          The local path where to save the snapshots (default ".")
+      --outputs strings                        The list of outputs to push the snapshot to (default [local])
 ```
 
 ## TODO

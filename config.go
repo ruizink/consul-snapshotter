@@ -64,6 +64,8 @@ func (c *config) loadConfig() error {
 	viper.SetDefault("consul.url", "http://127.0.0.1:8500")
 	viper.SetDefault("consul.lock-key", "consul-snapshot/.lock")
 	viper.SetDefault("consul.lock-timeout", 10*time.Minute)
+	viper.SetDefault("outputs", []string{"local"})
+	viper.SetDefault("local.destination-path", ".")
 	// bind env vars
 	viper.BindEnv("consul.url", "CONSUL_HTTP_ADDR")
 	viper.BindEnv("consul.token", "CONSUL_HTTP_TOKEN")
@@ -83,7 +85,7 @@ func (c *config) loadConfig() error {
 	regFlagString("azure-blob.container-path", "", "The path to use inside the Azure Blob container")
 	regFlagString("azure-blob.storage-account", "", "The Azure Blob storage account to use")
 	regFlagString("azure-blob.storage-access-key", "", "The Azure Blob storage access key to use")
-	regFlagString("local.destination-path", "", "The local path where to save the snapshots")
+	regFlagString("local.destination-path", viper.GetString("local.destination-path"), "The local path where to save the snapshots")
 	pflag.Parse()
 
 	if err := viper.BindPFlags(pflag.CommandLine); err != nil {
