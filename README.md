@@ -12,7 +12,7 @@ Example: Run every 10 seconds and save the snapshot to the current directory
 
 Usage:
 
-```bash
+```text
 Usage:
       --azure-blob.container-name string       The name of the Azure Blob container to use
       --azure-blob.container-path string       The path to use inside the Azure Blob container
