@@ -19,4 +19,4 @@ azure-blob:
 
 outputs:
     - "local"
-    - "azure_blob"
+    # - "azure_blob"
