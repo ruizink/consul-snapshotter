@@ -12,8 +12,8 @@ import (
 type consulConfig struct {
 	URL         string        `json:"url"`
 	Token       string        `json:"token"`
-	LockKey     string        `json:lock-key`
-	LockTimeout time.Duration `json:lock-timeout`
+	LockKey     string        `json:"lock-key"`
+	LockTimeout time.Duration `json:"lock-timeout"`
 }
 
 type localOutputConfig struct {
