@@ -64,6 +64,7 @@ func (c *config) loadConfig() error {
 	viper.SetDefault("consul.url", "http://127.0.0.1:8500")
 	viper.SetDefault("consul.lock-key", "consul-snapshot/.lock")
 	viper.SetDefault("consul.lock-timeout", 10*time.Minute)
+	// bind env vars
 	viper.BindEnv("consul.url", "CONSUL_HTTP_ADDR")
 	viper.BindEnv("consul.token", "CONSUL_HTTP_TOKEN")
 	viper.BindEnv("azure-blob.storage-account", "AZURE_STORAGE_ACCOUNT")
@@ -88,8 +89,6 @@ func (c *config) loadConfig() error {
 	if err := viper.BindPFlags(pflag.CommandLine); err != nil {
 		return err
 	}
-
-	// read env vars
 
 	// load config from file
 	viper.SetConfigName("config")
