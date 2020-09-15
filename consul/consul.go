@@ -76,16 +76,19 @@ func NewWorker(consulURL, consulToken, key string, sessionTimeout time.Duration)
 	return w, nil
 }
 
-func AcquireLock(w *worker) (bool, error) {
+func AcquireLock(w *worker) error {
 	if err := w.createSession(); err != nil {
-		return false, err
+		return err
 	}
 
 	r, err := w.acquireLock()
 	if err != nil {
-		return false, err
+		return err
 	}
-	return r, nil
+	if !r {
+		return fmt.Errorf("Lock is acquired by another resource")
+	}
+	return nil
 }
 
 func ReleaseLock(w *worker) error {

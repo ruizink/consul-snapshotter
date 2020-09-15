@@ -75,9 +75,8 @@ func run(ctx context.Context, c *config, stdout io.Writer) error {
 		}
 
 		// acquire lock
-		lock, err := consul.AcquireLock(worker)
-		if err != nil || !lock {
-			log.Println("Could not acquire lock. Skipping...")
+		if err := consul.AcquireLock(worker); err != nil {
+			log.Println(fmt.Sprintf("Could not acquire lock (Reason: %v). Skipping...", err))
 			return
 		}
 		log.Println("Acquired lock for session ID", worker.SessionID)
