@@ -6,6 +6,10 @@ A binary to help you perform Consul backups periodically
 
 `go run main.go config.go`
 
+Example: Run every 10 seconds and save the snapshot to the current directory
+
+`go run main.go config.go --cron "@every 10s" --local.destination-path "." --outputs "local"`
+
 ## TODO
 
 * Write documentation
