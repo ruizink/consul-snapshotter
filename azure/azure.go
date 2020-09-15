@@ -41,7 +41,7 @@ func UploadBlob(srcFile, destFile, containerName string, c *config) (int, error)
 	// TODO: Allow the URL to be a parameter
 	// Setup the blob service URL endpoint
 	URL, _ := url.Parse(
-		fmt.Sprintf("https://%s.blob.core.windows.net/%s", accountName, containerName))
+		fmt.Sprintf("https://%s.blob.core.windows.net/%s", c.accountName, containerName))
 
 	// Create a ContainerURL object using the container URL and a request pipeline
 	containerURL := azblob.NewContainerURL(*URL, p)
