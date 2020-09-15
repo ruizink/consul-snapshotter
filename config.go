@@ -73,6 +73,7 @@ func (c *config) loadConfig() error {
 	viper.BindEnv("azure-blob.storage-access-key", "AZURE_STORAGE_ACCESS_KEY")
 
 	// read command flags
+	regFlagString("configdir", ".", "The path to look for the configuration file")
 	regFlagString("cron", viper.GetString("cron"), "The cron expression to define when to run")
 	regFlagString("filename-prefix", viper.GetString("filename-prefix"), "The prefix to use in the snapshot name")
 	regFlagString("file-extension", viper.GetString("file-extension"), "The file extension to use in the snapshot name")
@@ -94,7 +95,7 @@ func (c *config) loadConfig() error {
 
 	// load config from file
 	viper.SetConfigName("config")
-	viper.AddConfigPath(".")
+	viper.AddConfigPath(viper.GetString("configdir"))
 
 	if err := viper.ReadInConfig(); err != nil {
 		log.Printf("[WARN] Could not load config file: %s \n", err)

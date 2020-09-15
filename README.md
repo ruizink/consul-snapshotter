@@ -26,6 +26,10 @@ Run every 10 seconds and save the snapshot to the current directory
 
 `consul-snapshot --cron "@every 10s" --local.destination-path "." --outputs "local"`
 
+Run with config from file:
+
+`consul-snapshot --configdir /etc/consul-snapshot`
+
 Usage:
 
 ```text
@@ -34,6 +38,7 @@ Usage of consul-snapshot:
       --azure-blob.container-path string       The path to use inside the Azure Blob container
       --azure-blob.storage-access-key string   The Azure Blob storage access key to use
       --azure-blob.storage-account string      The Azure Blob storage account to use
+      --configdir string                       The path to look for the configuration file (default ".")
       --consul.lock-key string                 The Key to use in the KV lock (default "consul-snapshot/.lock")
       --consul.lock-timeout duration           The timeout for the session lock (default 10m0s)
       --consul.token string                    The Consul Agent auth token
