@@ -2,13 +2,27 @@
 
 A binary to help you perform Consul backups periodically
 
+## Build
+
+Build for all platforms:
+
+`make build`
+
+Build for specific platform:
+
+`make build-linux`
+
+Clean the build environment:
+
+`make clean`
+
 ## Run
 
-`go run main.go config.go`
+`consul-snapshot`
 
 Example: Run every 10 seconds and save the snapshot to the current directory
 
-`go run main.go config.go --cron "@every 10s" --local.destination-path "." --outputs "local"`
+`consul-snapshot --cron "@every 10s" --local.destination-path "." --outputs "local"`
 
 Usage:
 
