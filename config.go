@@ -43,9 +43,9 @@ func regFlagString(flag string, value string, usage string) {
 	}
 }
 
-func regFlagStringArray(flag string, value []string, usage string) {
+func regFlagStringSlice(flag string, value []string, usage string) {
 	if pflag.Lookup(flag) == nil {
-		pflag.StringArray(flag, value, usage)
+		pflag.StringSlice(flag, value, usage)
 	}
 }
 
@@ -78,7 +78,7 @@ func (c *config) loadConfig() error {
 	regFlagString("consul.token", viper.GetString("consul.token"), "The Consul Agent auth token")
 	regFlagString("consul.lock-key", viper.GetString("consul.lock-key"), "The Key to use in the KV lock")
 	regFlagDuration("consul.lock-timeout", viper.GetDuration("consul.lock-timeout"), "The timeout for the session lock")
-	regFlagStringArray("outputs", viper.GetStringSlice("outputs"), "The list of outputs to push the snapshot to")
+	regFlagStringSlice("outputs", viper.GetStringSlice("outputs"), "The list of outputs to push the snapshot to")
 	regFlagString("azure-blob.container-name", "", "The name of the Azure Blob container to use")
 	regFlagString("azure-blob.container-path", "", "The path to use inside the Azure Blob container")
 	regFlagString("azure-blob.storage-account", "", "The Azure Blob storage account to use")
