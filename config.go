@@ -96,7 +96,7 @@ func (c *config) loadConfig() error {
 	viper.AddConfigPath(".")
 
 	if err := viper.ReadInConfig(); err != nil {
-		log.Printf("[WARN] Error loading config file: %s \n", err)
+		log.Printf("[WARN] Could not load config file: %s \n", err)
 	}
 
 	// Consul config
