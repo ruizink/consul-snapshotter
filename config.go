@@ -71,7 +71,7 @@ func (c *config) loadConfig() error {
 	viper.SetDefault("filename-prefix", "consul-snapshot-")
 	viper.SetDefault("file-extension", ".snap")
 	viper.SetDefault("consul.url", "http://127.0.0.1:8500")
-	viper.SetDefault("consul.lock-key", "consul-snapshot/.lock")
+	viper.SetDefault("consul.lock-key", "consul-snapshotter/.lock")
 	viper.SetDefault("consul.lock-timeout", 10*time.Minute)
 	viper.SetDefault("outputs", []string{"local"})
 	viper.SetDefault("local.destination-path", ".")

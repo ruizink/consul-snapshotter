@@ -4,7 +4,7 @@ import (
 	"log"
 	"path"
 
-	"github.com/ruizink/consul-snapshot/azure"
+	"github.com/ruizink/consul-snapshotter/azure"
 )
 
 type AzureBlobOutput struct {

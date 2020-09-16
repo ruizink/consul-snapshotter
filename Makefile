@@ -1,5 +1,5 @@
 BIN_PATH=bin
-BINARY_NAME=consul-snapshot
+BINARY_NAME=consul-snapshotter
 
 build: build-linux build-darwin
 

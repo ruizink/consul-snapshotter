@@ -10,10 +10,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ruizink/consul-snapshot/outputs"
+	"github.com/ruizink/consul-snapshotter/outputs"
 
 	"github.com/robfig/cron"
-	"github.com/ruizink/consul-snapshot/consul"
+	"github.com/ruizink/consul-snapshotter/consul"
 )
 
 func main() {

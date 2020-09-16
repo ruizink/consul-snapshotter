@@ -1,10 +1,10 @@
-module github.com/ruizink/consul-snapshot
+module github.com/ruizink/consul-snapshotter
 
 go 1.14
 
-replace github.com/ruizink/consul-snapshot/consul => ./consul
+replace github.com/ruizink/consul-snapshotter/consul => ./consul
 
-replace github.com/ruizink/consul-snapshot/azure => ./azure
+replace github.com/ruizink/consul-snapshotter/azure => ./azure
 
 require (
 	github.com/Azure/azure-storage-blob-go v0.10.0

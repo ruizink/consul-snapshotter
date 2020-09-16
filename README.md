@@ -1,6 +1,6 @@
-# consul-snapshot
+# consul-snapshotter
 
-A binary to help you perform Consul backups periodically
+A tool to help you perform Consul backups periodically
 
 ## Build
 
@@ -20,28 +20,28 @@ Clean the build environment:
 
 Run with default settings:
 
-`consul-snapshot`
+`consul-snapshotter`
 
 Run every 10 seconds and save the snapshot to the current directory
 
-`consul-snapshot --cron "@every 10s" --local.destination-path "." --outputs "local"`
+`consul-snapshotter --cron "@every 10s" --local.destination-path "." --outputs "local"`
 
 Run with config from file:
 
-`consul-snapshot --configdir /etc/consul-snapshot`
+`consul-snapshotter --configdir /etc/consul-snapshotter`
 
 Usage:
 
-`consul-snapshot --help`
+`consul-snapshotter --help`
 
 ```text
-Usage of consul-snapshot:
+Usage of consul-snapshotter:
       --azure-blob.container-name string       The name of the Azure Blob container to use
       --azure-blob.container-path string       The path to use inside the Azure Blob container
       --azure-blob.storage-access-key string   The Azure Blob storage access key to use
       --azure-blob.storage-account string      The Azure Blob storage account to use
       --configdir string                       The path to look for the configuration file (default ".")
-      --consul.lock-key string                 The Key to use in the KV lock (default "consul-snapshot/.lock")
+      --consul.lock-key string                 The Key to use in the KV lock (default "consul-snapshotter/.lock")
       --consul.lock-timeout duration           The timeout for the session lock (default 10m0s)
       --consul.token string                    The Consul Agent auth token
       --consul.url string                      The Consul Agent URL (default "http://127.0.0.1:8500")
