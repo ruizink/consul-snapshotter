@@ -124,26 +124,34 @@ func processOutputs(snap string, c *config) {
 	for _, output := range c.Outputs {
 		switch output {
 		case "local":
-			// Rename temp file if local output is defined (make sure to run this output as last one)
+			// Make sure to defer the "local" output, because we will rename the tmp snapshot that is used by the other outputs
 			defer func() {
 				log.Println("Processing output: local")
 
 				o := &outputs.LocalOutput{
-					DestinationPath:          c.LocalOutputConfig.DestinationPath,
-					Filename:                 outputFileName,
+					DestinationPath: c.LocalOutputConfig.DestinationPath,
+					Filename:        outputFileName,
+					RetentionPeriod: c.LocalOutputConfig.RetentionPeriod,
 				}
-				o.Save(snap)
+				if err := o.Save(snap); err != nil {
+					log.Println("Error writing snapshot file: ", err)
+					return
+				}
+				if err := o.ApplyRetentionPolicy(); err != nil {
+					log.Println("Error applying retention policy: ", err)
+					return
+				}
 			}()
 		case "azure_blob":
 			// Upload to Azure
 			log.Println("Processing output: azure_blob")
 
 			o := &outputs.AzureBlobOutput{
-				ContainerName:            c.AzureOutputConfig.ContainerName,
-				ContainerPath:            c.AzureOutputConfig.ContainerPath,
-				Filename:                 outputFileName,
-				StorageAccount:           c.AzureOutputConfig.StorageAccount,
-				StoraceAccessKey:         c.AzureOutputConfig.StoraceAccessKey,
+				ContainerName:    c.AzureOutputConfig.ContainerName,
+				ContainerPath:    c.AzureOutputConfig.ContainerPath,
+				Filename:         outputFileName,
+				StorageAccount:   c.AzureOutputConfig.StorageAccount,
+				StoraceAccessKey: c.AzureOutputConfig.StoraceAccessKey,
 			}
 			o.Save(snap)
 		}

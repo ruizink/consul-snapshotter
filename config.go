@@ -19,7 +19,8 @@ type consulConfig struct {
 }
 
 type localOutputConfig struct {
-	DestinationPath string `json:"destination-path"`
+	DestinationPath string        `json:"destination-path"`
+	RetentionPeriod time.Duration `json:"retention-period"`
 }
 
 type azureOutputConfig struct {
@@ -74,6 +75,7 @@ func (c *config) loadConfig() error {
 	viper.SetDefault("consul.lock-timeout", 10*time.Minute)
 	viper.SetDefault("outputs", []string{"local"})
 	viper.SetDefault("local.destination-path", ".")
+	viper.SetDefault("local.retention-period", "0s")
 
 	// read command flags
 	regFlagString("configdir", ".", "The path to look for the configuration file")
@@ -90,6 +92,7 @@ func (c *config) loadConfig() error {
 	regFlagString("azure-blob.storage-account", "", "The Azure Blob storage account to use")
 	regFlagString("azure-blob.storage-access-key", "", "The Azure Blob storage access key to use")
 	regFlagString("local.destination-path", viper.GetString("local.destination-path"), "The local path where to save the snapshots")
+	regFlagDuration("local.retention-period", viper.GetDuration("local.retention-period"), "The duration that Local snapshots need to be retained (default \"0s\" - keep forever)")
 	regFlagBoolP("help", "h", false, "Prints this help message")
 
 	pflag.Parse()
@@ -136,6 +139,7 @@ func (c *config) loadConfig() error {
 	// Local output config
 	localOutputConfig := &localOutputConfig{}
 	localOutputConfig.DestinationPath = viper.GetString("local.destination-path")
+	localOutputConfig.RetentionPeriod = viper.GetDuration("local.retention-period")
 
 	c.Cron = viper.GetString("cron")
 	c.FilenamePrefix = viper.GetString("filename-prefix")

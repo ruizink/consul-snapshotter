@@ -50,6 +50,7 @@ Usage of consul-snapshot:
       --filename-prefix string                 The prefix to use in the snapshot name (default "consul-snapshot-")
   -h, --help                                   Prints this help message
       --local.destination-path string          The local path where to save the snapshots (default ".")
+      --local.retention-period duration        The duration that Local snapshots need to be retained (default "0s" - keep forever)
   -o, --outputs strings                        The list of outputs to push the snapshot to (default [local])
 ```
 

@@ -3,19 +3,16 @@ package outputs
 import (
 	"log"
 	"path"
-	"time"
 
 	"github.com/ruizink/consul-snapshot/azure"
 )
 
 type AzureBlobOutput struct {
-	ContainerName            string
-	ContainerPath            string
-	Filename                 string
-	StorageAccount           string
-	StoraceAccessKey         string
-	RetentionKeep            int
-	RetentionDeleteOlderThan time.Duration
+	ContainerName    string
+	ContainerPath    string
+	Filename         string
+	StorageAccount   string
+	StoraceAccessKey string
 }
 
 func (o *AzureBlobOutput) Save(snap string) {
