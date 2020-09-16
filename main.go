@@ -7,12 +7,12 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"path"
 	"syscall"
 	"time"
 
+	"github.com/ruizink/consul-snapshot/outputs"
+
 	"github.com/robfig/cron"
-	"github.com/ruizink/consul-snapshot/azure"
 	"github.com/ruizink/consul-snapshot/consul"
 )
 
@@ -126,31 +126,26 @@ func processOutputs(snap string, c *config) {
 		case "local":
 			// Rename temp file if local output is defined (make sure to run this output as last one)
 			defer func() {
-				dstFile := path.Join(c.LocalOutputConfig.DestinationPath, outputFileName)
 				log.Println("Processing output: local")
-				if err := os.Rename(snap, dstFile); err != nil {
-					log.Println("Error writing snapshot file: ", err)
-					return
+
+				o := &outputs.LocalOutput{
+					DestinationPath:          c.LocalOutputConfig.DestinationPath,
+					Filename:                 outputFileName,
 				}
-				log.Println("Saved snapshot to:", dstFile)
+				o.Save(snap)
 			}()
 		case "azure_blob":
 			// Upload to Azure
-			func() {
-				log.Println("Processing output: azure_blob")
-				destFile := path.Join(c.AzureOutputConfig.ContainerPath, outputFileName)
-				config, err := azure.AzureConfig(c.AzureOutputConfig.StorageAccount, c.AzureOutputConfig.StoraceAccessKey)
-				if err != nil {
-					log.Println("Invalid Azure config:", err)
-					return
-				}
-				_, err = azure.UploadBlob(snap, destFile, c.AzureOutputConfig.ContainerName, config)
-				if err != nil {
-					log.Println("Error uploading snapshot file:", err)
-					return
-				}
-				log.Println("Uploaded snapshot to:", destFile)
-			}()
+			log.Println("Processing output: azure_blob")
+
+			o := &outputs.AzureBlobOutput{
+				ContainerName:            c.AzureOutputConfig.ContainerName,
+				ContainerPath:            c.AzureOutputConfig.ContainerPath,
+				Filename:                 outputFileName,
+				StorageAccount:           c.AzureOutputConfig.StorageAccount,
+				StoraceAccessKey:         c.AzureOutputConfig.StoraceAccessKey,
+			}
+			o.Save(snap)
 		}
 	}
 }
