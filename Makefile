@@ -18,16 +18,23 @@ build-darwin:
 
 archive: linux-zip linux-tgz darwin-zip darwin-tgz
 
-linux-zip:
+.mk-archive:
+	mkdir -p $(ARCHIVE_PATH)
+
+linux-zip: .mk-archive
+	@echo "Creating zip for linux_amd64"
 	zip --junk-paths $(ARCHIVE_PATH)/$(BINARY_NAME)_linux_amd64.zip $(BIN_PATH)/$(BINARY_NAME)_linux_amd64
 
-darwin-zip:
+darwin-zip: .mk-archive
+	@echo "Creating zip for darwin_amd64"
 	zip --junk-paths $(ARCHIVE_PATH)/$(BINARY_NAME)_darwin_amd64.zip $(BIN_PATH)/$(BINARY_NAME)_darwin_amd64
 
-linux-tgz:
+linux-tgz: .mk-archive
+	@echo "Creating tgz for linux_amd64"
 	tar -czvf $(ARCHIVE_PATH)/$(BINARY_NAME)_linux_amd64.tar.gz -C $(BIN_PATH) $(BINARY_NAME)_linux_amd64
 
-darwin-tgz:
+darwin-tgz: .mk-archive
+	@echo "Creating tgz for darwin_amd64"
 	tar -czvf $(ARCHIVE_PATH)/$(BINARY_NAME)_darwin_amd64.tar.gz -C $(BIN_PATH) $(BINARY_NAME)_darwin_amd64
 
 clean:
