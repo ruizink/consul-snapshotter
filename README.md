@@ -32,6 +32,8 @@ Run with config from file:
 
 Usage:
 
+`consul-snapshot --help`
+
 ```text
 Usage of consul-snapshot:
       --azure-blob.container-name string       The name of the Azure Blob container to use
@@ -46,6 +48,7 @@ Usage of consul-snapshot:
       --cron string                            The cron expression to define when to run (default "@every 1h")
       --file-extension string                  The file extension to use in the snapshot name (default ".snap")
       --filename-prefix string                 The prefix to use in the snapshot name (default "consul-snapshot-")
+  -h, --help                                   Prints this help message
       --local.destination-path string          The local path where to save the snapshots (default ".")
   -o, --outputs strings                        The list of outputs to push the snapshot to (default [local])
 ```

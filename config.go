@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/spf13/pflag"
@@ -55,6 +57,12 @@ func regFlagDuration(flag string, value time.Duration, usage string) {
 	}
 }
 
+func regFlagBoolP(flag, shorthand string, value bool, usage string) {
+	if pflag.Lookup(flag) == nil {
+		pflag.BoolP(flag, shorthand, value, usage)
+	}
+}
+
 func (c *config) loadConfig() error {
 
 	// set defaults
@@ -87,10 +95,19 @@ func (c *config) loadConfig() error {
 	regFlagString("azure-blob.storage-account", "", "The Azure Blob storage account to use")
 	regFlagString("azure-blob.storage-access-key", "", "The Azure Blob storage access key to use")
 	regFlagString("local.destination-path", viper.GetString("local.destination-path"), "The local path where to save the snapshots")
+	regFlagBoolP("help", "h", false, "Prints this help message")
+
 	pflag.Parse()
 
 	if err := viper.BindPFlags(pflag.CommandLine); err != nil {
 		return err
+	}
+
+	// print usage if --help or -h
+	if viper.GetBool("help") {
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+		pflag.PrintDefaults()
+		os.Exit(0)
 	}
 
 	// load config from file
