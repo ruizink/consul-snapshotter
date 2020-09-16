@@ -47,7 +47,7 @@ Usage of consul-snapshot:
       --file-extension string                  The file extension to use in the snapshot name (default ".snap")
       --filename-prefix string                 The prefix to use in the snapshot name (default "consul-snapshot-")
       --local.destination-path string          The local path where to save the snapshots (default ".")
-      --outputs strings                        The list of outputs to push the snapshot to (default [local])
+  -o, --outputs strings                        The list of outputs to push the snapshot to (default [local])
 ```
 
 ## TODO
