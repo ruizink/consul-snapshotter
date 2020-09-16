@@ -57,10 +57,12 @@ func UploadBlob(srcFile, destFile, containerName string, c *config) (int, error)
 
 	// TODO: Allow the Parallelism to be a parameter
 	// Upload the blob
-	log.Println(fmt.Sprintf("Uploading the file with blob name: %s", destFile))
+	uBlockSize := int64(4 * 1024 * 1024)
+	uParallelism := uint16(16)
+	log.Println(fmt.Sprintf("Uploading the file (BlockSize: %v, Parallelism: %v)", uBlockSize, uParallelism))
 	_, err = azblob.UploadFileToBlockBlob(ctx, file, blobURL, azblob.UploadToBlockBlobOptions{
-		BlockSize:   4 * 1024 * 1024,
-		Parallelism: 16})
+		BlockSize:   uBlockSize,
+		Parallelism: uParallelism})
 	if err != nil {
 		return 0, fmt.Errorf("Error uploading file: %s", err)
 	}
