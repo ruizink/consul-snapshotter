@@ -74,11 +74,6 @@ func (c *config) loadConfig() error {
 	viper.SetDefault("consul.lock-timeout", 10*time.Minute)
 	viper.SetDefault("outputs", []string{"local"})
 	viper.SetDefault("local.destination-path", ".")
-	// bind env vars
-	viper.BindEnv("consul.url", "CONSUL_HTTP_ADDR")
-	viper.BindEnv("consul.token", "CONSUL_HTTP_TOKEN")
-	viper.BindEnv("azure-blob.storage-account", "AZURE_STORAGE_ACCOUNT")
-	viper.BindEnv("azure-blob.storage-access-key", "AZURE_STORAGE_ACCESS_KEY")
 
 	// read command flags
 	regFlagString("configdir", ".", "The path to look for the configuration file")
@@ -109,6 +104,12 @@ func (c *config) loadConfig() error {
 		pflag.PrintDefaults()
 		os.Exit(0)
 	}
+
+	// bind env vars
+	viper.BindEnv("consul.url", "CONSUL_HTTP_ADDR")
+	viper.BindEnv("consul.token", "CONSUL_HTTP_TOKEN")
+	viper.BindEnv("azure-blob.storage-account", "AZURE_STORAGE_ACCOUNT")
+	viper.BindEnv("azure-blob.storage-access-key", "AZURE_STORAGE_ACCESS_KEY")
 
 	// load config from file
 	viper.SetConfigName("config")
