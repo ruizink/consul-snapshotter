@@ -1,0 +1,89 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.14
+        id: go
+        
+      - name: Checkout code
+        uses: actions/checkout@v2
+        
+      - name: Build project
+        run: |
+          make build
+          make archive
+          cd archive && sha256sum * > SHA256SUM
+        
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+      
+      - name: Upload Release Linux zip
+        id: upload-release-linux-zip
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./consul-snapshotter_linux_amd64.zip
+          asset_name: consul-snapshotter_linux_amd64.zip
+          asset_content_type: application/zip
+      - name: Upload Release Darwin zip
+        id: upload-release-darwin-zip
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./archive/consul-snapshotter_darwin_amd64.zip
+          asset_name: consul-snapshotter_darwin_amd64.zip
+          asset_content_type: application/zip
+      - name: Upload Release Linux tgz
+        id: upload-release-linux-tar-gz
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./archive/consul-snapshotter_linux_amd64.tar.gz
+          asset_name: consul-snapshotter_linux_amd64.tar.gz
+          asset_content_type: application/tar+gzip
+      - name: Upload Release Darwin tgz
+        id: upload-release-darwin-tar-gz
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./archive/consul-snapshotter_darwin_amd64.tar.gz
+          asset_name: consul-snapshotter_darwin_amd64.tar.gz
+          asset_content_type: application/tar+gzip
+      - name: Upload Checksum
+        id: upload-checksum
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./archive/SHA256SUM
+          asset_name: SHA256SUM
+          asset_content_type: text/plain
