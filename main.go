@@ -151,7 +151,7 @@ func processOutputs(snap string, c *config) {
 				ContainerPath:    c.AzureOutputConfig.ContainerPath,
 				Filename:         outputFileName,
 				StorageAccount:   c.AzureOutputConfig.StorageAccount,
-				StoraceAccessKey: c.AzureOutputConfig.StoraceAccessKey,
+				StorageAccessKey: c.AzureOutputConfig.StorageAccessKey,
 			}
 			o.Save(snap)
 		}
