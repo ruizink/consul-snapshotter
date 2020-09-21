@@ -27,7 +27,7 @@ type azureOutputConfig struct {
 	ContainerName    string `json:"container-name"`
 	ContainerPath    string `json:"container-path"`
 	StorageAccount   string `json:"azure-storage-account"`
-	StoraceAccessKey string `json:"azure-storage-access-key"`
+	StorageAccessKey string `json:"azure-storage-access-key"`
 }
 
 type config struct {
@@ -134,7 +134,7 @@ func (c *config) loadConfig() error {
 	azureOutputConfig.ContainerName = viper.GetString("azure-blob.container-name")
 	azureOutputConfig.ContainerPath = viper.GetString("azure-blob.container-path")
 	azureOutputConfig.StorageAccount = viper.GetString("azure-blob.storage-account")
-	azureOutputConfig.StoraceAccessKey = viper.GetString("azure-blob.storage-access-key")
+	azureOutputConfig.StorageAccessKey = viper.GetString("azure-blob.storage-access-key")
 
 	// Local output config
 	localOutputConfig := &localOutputConfig{}
