@@ -28,6 +28,7 @@ type azureOutputConfig struct {
 	ContainerPath    string `json:"container-path"`
 	StorageAccount   string `json:"azure-storage-account"`
 	StorageAccessKey string `json:"azure-storage-access-key"`
+	StorageSASToken  string `json:"azure-storage-sas-token"`
 }
 
 type config struct {
@@ -90,7 +91,8 @@ func (c *config) loadConfig() error {
 	regFlagString("azure-blob.container-name", "", "The name of the Azure Blob container to use")
 	regFlagString("azure-blob.container-path", "", "The path to use inside the Azure Blob container")
 	regFlagString("azure-blob.storage-account", "", "The Azure Blob storage account to use")
-	regFlagString("azure-blob.storage-access-key", "", "The Azure Blob storage access key to use")
+	regFlagString("azure-blob.storage-access-key", "", "The Azure Blob storage access key to use (mutually exclusive with azure-blob.storage-sas-token)")
+	regFlagString("azure-blob.storage-sas-token", "", "The Azure Blob storage SAS token to use (mutually exclusive with azure-blob.storage-access-key)")
 	regFlagString("local.destination-path", viper.GetString("local.destination-path"), "The local path where to save the snapshots")
 	regFlagDuration("local.retention-period", viper.GetDuration("local.retention-period"), "The duration that Local snapshots need to be retained (default \"0s\" - keep forever)")
 	regFlagBoolP("help", "h", false, "Prints this help message")
@@ -113,6 +115,7 @@ func (c *config) loadConfig() error {
 	viper.BindEnv("consul.token", "CONSUL_HTTP_TOKEN")
 	viper.BindEnv("azure-blob.storage-account", "AZURE_STORAGE_ACCOUNT")
 	viper.BindEnv("azure-blob.storage-access-key", "AZURE_STORAGE_ACCESS_KEY")
+	viper.BindEnv("azure-blob.storage-sas-token", "AZURE_STORAGE_SAS_TOKEN")
 
 	// load config from file
 	viper.SetConfigName("config")
@@ -135,6 +138,7 @@ func (c *config) loadConfig() error {
 	azureOutputConfig.ContainerPath = viper.GetString("azure-blob.container-path")
 	azureOutputConfig.StorageAccount = viper.GetString("azure-blob.storage-account")
 	azureOutputConfig.StorageAccessKey = viper.GetString("azure-blob.storage-access-key")
+	azureOutputConfig.StorageSASToken = viper.GetString("azure-blob.storage-sas-token")
 
 	// Local output config
 	localOutputConfig := &localOutputConfig{}

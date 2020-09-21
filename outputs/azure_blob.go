@@ -13,11 +13,12 @@ type AzureBlobOutput struct {
 	Filename         string
 	StorageAccount   string
 	StorageAccessKey string
+	StorageSASToken  string
 }
 
 func (o *AzureBlobOutput) Save(snap string) {
 	destFile := path.Join(o.ContainerPath, o.Filename)
-	config, err := azure.AzureConfig(o.StorageAccount, o.StorageAccessKey)
+	config, err := azure.AzureConfig(o.StorageAccount, o.StorageAccessKey, o.StorageSASToken)
 	if err != nil {
 		log.Println("Invalid Azure config:", err)
 		return

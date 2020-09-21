@@ -7,6 +7,7 @@ replace github.com/ruizink/consul-snapshotter/consul => ./consul
 replace github.com/ruizink/consul-snapshotter/azure => ./azure
 
 require (
+	github.com/Azure/azure-pipeline-go v0.2.2
 	github.com/Azure/azure-storage-blob-go v0.10.0
 	github.com/hashicorp/consul v1.8.1
 	github.com/hashicorp/consul/api v1.5.0
