@@ -153,8 +153,13 @@ func processOutputs(snap string, c *config) {
 				StorageAccount:   c.AzureOutputConfig.StorageAccount,
 				StorageAccessKey: c.AzureOutputConfig.StorageAccessKey,
 				StorageSASToken:  c.AzureOutputConfig.StorageSASToken,
+				RetentionPeriod:  c.AzureOutputConfig.RetentionPeriod,
 			}
 			o.Save(snap)
+
+			if err := o.ApplyRetentionPolicy(); err != nil {
+				log.Println("Error applying retention policy: ", err)
+			}
 		}
 	}
 }

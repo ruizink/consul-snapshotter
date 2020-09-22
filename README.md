@@ -41,6 +41,7 @@ Usage of consul-snapshotter:
       --azure-blob.storage-access-key string   The Azure Blob storage access key to use
       --azure-blob.storage-sas-token           The Azure Blob storage SAS token to use instead of an access key
       --azure-blob.storage-account string      The Azure Blob storage account to use
+      --azure-blob.retention-period duration   The duration that Azure Blob snapshots need to be retained (default "0s" - keep forever)
       --configdir string                       The path to look for the configuration file (default ".")
       --consul.lock-key string                 The Key to use in the KV lock (default "consul-snapshotter/.lock")
       --consul.lock-timeout duration           The timeout for the session lock (default 10m0s)

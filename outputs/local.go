@@ -13,7 +13,6 @@ import (
 type LocalOutput struct {
 	DestinationPath string
 	Filename        string
-	RetentionKeep   int
 	RetentionPeriod time.Duration
 }
 
