@@ -152,6 +152,7 @@ func processOutputs(snap string, c *config) {
 				Filename:         outputFileName,
 				StorageAccount:   c.AzureOutputConfig.StorageAccount,
 				StorageAccessKey: c.AzureOutputConfig.StorageAccessKey,
+				StorageSASToken:  c.AzureOutputConfig.StorageSASToken,
 			}
 			o.Save(snap)
 		}

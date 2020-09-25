@@ -39,6 +39,7 @@ Usage of consul-snapshotter:
       --azure-blob.container-name string       The name of the Azure Blob container to use
       --azure-blob.container-path string       The path to use inside the Azure Blob container
       --azure-blob.storage-access-key string   The Azure Blob storage access key to use
+      --azure-blob.storage-sas-token           The Azure Blob storage SAS token to use instead of an access key
       --azure-blob.storage-account string      The Azure Blob storage account to use
       --configdir string                       The path to look for the configuration file (default ".")
       --consul.lock-key string                 The Key to use in the KV lock (default "consul-snapshotter/.lock")
