@@ -47,7 +47,7 @@ func AuthenticateSASToken(containerName string, c *config) pipeline.Pipeline {
 	return azblob.NewPipeline(azblob.NewAnonymousCredential(), azblob.PipelineOptions{})
 }
 
-func UploadBlob(srcFile, destFile, containerName string, c *config) (int, error) {
+func GetContainerURL(containerName string, c *config) (azblob.ContainerURL, error) {
 	var p pipeline.Pipeline
 	var queryParameters string
 
@@ -58,7 +58,7 @@ func UploadBlob(srcFile, destFile, containerName string, c *config) (int, error)
 		var err error
 		p, err = AuthenticateAccountKey(containerName, c)
 		if err != nil {
-			return 0, err
+			return azblob.ContainerURL{}, err
 		}
 	}
 
@@ -68,7 +68,14 @@ func UploadBlob(srcFile, destFile, containerName string, c *config) (int, error)
 		fmt.Sprintf("https://%s.blob.core.windows.net/%s%s", c.accountName, containerName, queryParameters))
 
 	// Create a ContainerURL object using the container URL and a request pipeline
-	containerURL := azblob.NewContainerURL(*URL, p)
+	return azblob.NewContainerURL(*URL, p), nil
+}
+
+func UploadBlob(srcFile, destFile, containerName string, c *config) (int, error) {
+	containerURL, err := GetContainerURL(containerName, c)
+	if err != nil {
+		return 0, err
+	}
 
 	ctx := context.Background()
 
@@ -92,4 +99,48 @@ func UploadBlob(srcFile, destFile, containerName string, c *config) (int, error)
 	}
 
 	return 1, nil
+}
+
+func ListBlobs(containerName string, c *config) ([]azblob.BlobItem, error) {
+	var results = make([]azblob.BlobItem, 0)
+
+	containerURL, err := GetContainerURL(containerName, c)
+	if err != nil {
+		return results, err
+	}
+
+	ctx := context.Background()
+
+	for marker := (azblob.Marker{}); marker.NotDone(); {
+		// Get a result segment starting with the blob indicated by the current Marker.
+		listBlob, err := containerURL.ListBlobsFlatSegment(ctx, marker, azblob.ListBlobsSegmentOptions{})
+		if err != nil {
+			return results, fmt.Errorf("Error uploading file: %s", err)
+		}
+
+		// ListBlobs returns the start of the next segment; you MUST use this to get
+		// the next segment (after processing the current result segment).
+		marker = listBlob.NextMarker
+
+		results = append(results, listBlob.Segment.BlobItems...)
+	}
+
+	return results, nil
+}
+
+func DeleteBlob(containerName string, blob azblob.BlobItem, c *config) error {
+	containerURL, err := GetContainerURL(containerName, c)
+	if err != nil {
+		return err
+	}
+
+	blobUrl := containerURL.NewBlobURL(blob.Name)
+	ctx := context.Background()
+
+	_, err = blobUrl.Delete(ctx, azblob.DeleteSnapshotsOptionInclude, azblob.BlobAccessConditions{})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

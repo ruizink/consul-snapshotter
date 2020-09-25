@@ -24,11 +24,12 @@ type localOutputConfig struct {
 }
 
 type azureOutputConfig struct {
-	ContainerName    string `json:"container-name"`
-	ContainerPath    string `json:"container-path"`
-	StorageAccount   string `json:"azure-storage-account"`
-	StorageAccessKey string `json:"azure-storage-access-key"`
-	StorageSASToken  string `json:"azure-storage-sas-token"`
+	ContainerName    string        `json:"container-name"`
+	ContainerPath    string        `json:"container-path"`
+	StorageAccount   string        `json:"azure-storage-account"`
+	StorageAccessKey string        `json:"azure-storage-access-key"`
+	StorageSASToken  string        `json:"azure-storage-sas-token"`
+	RetentionPeriod  time.Duration `json:"retention-period"`
 }
 
 type config struct {
@@ -77,6 +78,7 @@ func (c *config) loadConfig() error {
 	viper.SetDefault("outputs", []string{"local"})
 	viper.SetDefault("local.destination-path", ".")
 	viper.SetDefault("local.retention-period", "0s")
+	viper.SetDefault("azure-blob.retention-period", "0s")
 
 	// read command flags
 	regFlagString("configdir", ".", "The path to look for the configuration file")
@@ -93,6 +95,7 @@ func (c *config) loadConfig() error {
 	regFlagString("azure-blob.storage-account", "", "The Azure Blob storage account to use")
 	regFlagString("azure-blob.storage-access-key", "", "The Azure Blob storage access key to use (mutually exclusive with azure-blob.storage-sas-token)")
 	regFlagString("azure-blob.storage-sas-token", "", "The Azure Blob storage SAS token to use (mutually exclusive with azure-blob.storage-access-key)")
+	regFlagDuration("azure-blob.retention-period", viper.GetDuration("azure-blob.retention-period"), "The duration that Azure Blob snapshots need to be retained (default \"0s\" - keep forever)")
 	regFlagString("local.destination-path", viper.GetString("local.destination-path"), "The local path where to save the snapshots")
 	regFlagDuration("local.retention-period", viper.GetDuration("local.retention-period"), "The duration that Local snapshots need to be retained (default \"0s\" - keep forever)")
 	regFlagBoolP("help", "h", false, "Prints this help message")
@@ -139,6 +142,7 @@ func (c *config) loadConfig() error {
 	azureOutputConfig.StorageAccount = viper.GetString("azure-blob.storage-account")
 	azureOutputConfig.StorageAccessKey = viper.GetString("azure-blob.storage-access-key")
 	azureOutputConfig.StorageSASToken = viper.GetString("azure-blob.storage-sas-token")
+	azureOutputConfig.RetentionPeriod = viper.GetDuration("azure-blob.retention-period")
 
 	// Local output config
 	localOutputConfig := &localOutputConfig{}
