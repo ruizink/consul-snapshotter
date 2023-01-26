@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/robfig/cron"
 	"github.com/ruizink/consul-snapshotter/consul"
+	"github.com/ruizink/consul-snapshotter/logger"
 )
 
 func main() {
@@ -36,14 +36,14 @@ func main() {
 			case s := <-signalChan:
 				switch s {
 				case syscall.SIGHUP:
-					log.Printf("Caught SIGHUP. Triggering a config reload.")
+					logger.Info("Caught SIGHUP. Triggering a config reload.")
 					c.loadConfig()
 				case os.Interrupt:
 					cancel()
 					os.Exit(1)
 				}
 			case <-ctx.Done():
-				// log.Printf("Terminated.")
+				// logger.Info("Terminated.")
 				os.Exit(0)
 			}
 		}
@@ -57,29 +57,25 @@ func main() {
 
 func run(ctx context.Context, c *config, stdout io.Writer) error {
 	c.loadConfig()
-	log.SetOutput(os.Stdout)
+	logger.SetLevel(c.LogLevel)
 
-	cron := cron.New()
-
-	log.Println("Starting with cron expression:", c.Cron)
-
-	cron.AddFunc(c.Cron, func() {
-		log.Println("####################################################################################")
-		log.Println("Starting snapshot backup procedure...")
-		defer log.Println("####################################################################################")
-		// create new worker
-		worker, err := consul.NewWorker(c.ConsulConfig.URL, c.ConsulConfig.Token, c.ConsulConfig.LockKey, c.ConsulConfig.LockTimeout)
+	runSnapshotter := func() error {
+		logger.Info("####################################################################################")
+		logger.Info("===> Performing Consul snapshot backup procedure...")
+		defer logger.Info("####################################################################################")
+		// create new consul client
+		consulWorker, err := consul.NewConsul(c.ConsulConfig.URL, c.ConsulConfig.Token, c.ConsulConfig.LockKey, c.ConsulConfig.LockTimeout)
 		if err != nil {
-			log.Println("Could not create a worker:", err)
-			return
+			logger.Error("Could not create a consul client: ", err)
+			return err
 		}
 
 		// acquire lock
-		if err := consul.AcquireLock(worker); err != nil {
-			log.Println(fmt.Sprintf("Could not acquire lock (Reason: %v). Skipping...", err))
-			return
+		if err := consulWorker.AcquireLock(); err != nil {
+			logger.Error("Could not acquire lock: ", err)
+			return err
 		}
-		log.Println("Acquired lock for session ID", worker.SessionID)
+		logger.Debug("Acquired lock for session ID: ", consulWorker.SessionID)
 
 		// Start renewing the session until doneChan is closed
 		doneChan := make(chan struct{})
@@ -91,8 +87,8 @@ func run(ctx context.Context, c *config, stdout io.Writer) error {
 		// Get consul snapshot
 		snap, err := consul.GetSnapshot(worker)
 		if err != nil {
-			log.Println("Could not perform snapshot:", err)
-			return
+			logger.Error("Could not perform snapshot: ", err)
+			return err
 		}
 
 		// Export the snapshot to all the configured outputs
@@ -100,6 +96,7 @@ func run(ctx context.Context, c *config, stdout io.Writer) error {
 
 		// Remove the temporary snapshot
 		os.Remove(snap)
+		logger.Info("Starting with cron expression: ", c.Cron)
 
 		// Release the lock
 		if err := consul.ReleaseLock(worker); err != nil {
@@ -114,6 +111,7 @@ func run(ctx context.Context, c *config, stdout io.Writer) error {
 		case <-ctx.Done():
 			return nil
 		}
+		logger.Info("Starting a single execution...")
 	}
 }
 
@@ -124,41 +122,56 @@ func processOutputs(snap string, c *config) {
 	for _, output := range c.Outputs {
 		switch output {
 		case "local":
-			// Make sure to defer the "local" output, because we will rename the tmp snapshot that is used by the other outputs
-			defer func() {
-				log.Println("Processing output: local")
+			logger.Info("===> Processing output: local")
 
-				o := &outputs.LocalOutput{
-					DestinationPath: c.LocalOutputConfig.DestinationPath,
-					Filename:        outputFileName,
-					RetentionPeriod: c.LocalOutputConfig.RetentionPeriod,
-				}
-				if err := o.Save(snap); err != nil {
-					log.Println("Error writing snapshot file: ", err)
-					return
-				}
-				if err := o.ApplyRetentionPolicy(); err != nil {
-					log.Println("Error applying retention policy: ", err)
-					return
-				}
-			}()
+			o := &outputs.LocalOutput{
+				DestinationPath:   c.LocalOutputConfig.DestinationPath,
+				Filename:          outputFileName,
+				CreateDestination: c.LocalOutputConfig.CreateDestination,
+				RetentionPeriod:   c.LocalOutputConfig.RetentionPeriod,
+			}
+			if err := o.Save(snap); err != nil {
+				logger.Error(err)
+				errors = multierror.Append(errors, err)
+				continue
+			}
+			if err := o.ApplyRetentionPolicy(); err != nil {
+				logger.Error(err)
+				errors = multierror.Append(errors, err)
+				continue
+			}
 		case "azure_blob":
 			// Upload to Azure
-			log.Println("Processing output: azure_blob")
+			logger.Info("===> Processing output: azure_blob")
 
 			o := &outputs.AzureBlobOutput{
-				ContainerName:    c.AzureOutputConfig.ContainerName,
-				ContainerPath:    c.AzureOutputConfig.ContainerPath,
-				Filename:         outputFileName,
-				StorageAccount:   c.AzureOutputConfig.StorageAccount,
-				StorageAccessKey: c.AzureOutputConfig.StorageAccessKey,
-				StorageSASToken:  c.AzureOutputConfig.StorageSASToken,
-				RetentionPeriod:  c.AzureOutputConfig.RetentionPeriod,
+				AzureConfig: &azure.AzureConfig{
+					ContainerName:    c.AzureOutputConfig.ContainerName,
+					ContainerPath:    c.AzureOutputConfig.ContainerPath,
+					Filename:         outputFileName,
+					StorageAccount:   c.AzureOutputConfig.StorageAccount,
+					StorageAccessKey: c.AzureOutputConfig.StorageAccessKey,
+					StorageSASToken:  c.AzureOutputConfig.StorageSASToken,
+					CreateContainer:  c.AzureOutputConfig.CreateContainer,
+					BlockSize:        c.AzureOutputConfig.BlockSize,
+					Parallelism:      c.AzureOutputConfig.Parallelism,
+					Emulated:         c.AzureOutputConfig.Emulated,
+					EmulatorUrl:      c.AzureOutputConfig.EmulatorUrl,
+				},
+				RetentionPeriod: c.AzureOutputConfig.RetentionPeriod,
+			}
+
+			if err := o.Save(snap); err != nil {
+				logger.Error(err)
+				errors = multierror.Append(errors, err)
+				continue
 			}
 			o.Save(snap)
 
 			if err := o.ApplyRetentionPolicy(); err != nil {
-				log.Println("Error applying retention policy: ", err)
+				logger.Error(err)
+				errors = multierror.Append(errors, err)
+				continue
 			}
 		}
 	}

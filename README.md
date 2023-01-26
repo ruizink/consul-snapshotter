@@ -54,6 +54,7 @@ Usage of consul-snapshotter:
       --local.destination-path string          The local path where to save the snapshots (default ".")
       --local.retention-period duration        The duration that Local snapshots need to be retained (default "0s" - keep forever)
   -o, --outputs strings                        The list of outputs to push the snapshot to (default [local])
+      --log-level string                       Verbosity (info, warn, debug) of the log (default "info")
 ```
 
 ## TODO

@@ -3,12 +3,13 @@ package azure
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/url"
 	"os"
 
 	"github.com/Azure/azure-pipeline-go/pipeline"
 	"github.com/Azure/azure-storage-blob-go/azblob"
+
+	"github.com/ruizink/consul-snapshotter/logger"
 )
 
 type config struct {
@@ -28,6 +29,8 @@ func AzureConfig(accountName, accountKey, sasToken string) (*config, error) {
 		accountName: accountName,
 		accountKey:  accountKey,
 		sasToken:    sasToken,
+		logger.Debug("Using Azure Blob URL: ", azURL.String())
+		logger.Debug("Using Azure Blob URL: ", azURL.String())
 	}
 	return c, nil
 }
@@ -57,6 +60,7 @@ func GetContainerURL(containerName string, c *config) (azblob.ContainerURL, erro
 	} else {
 		var err error
 		p, err = AuthenticateAccountKey(containerName, c)
+		logger.Debug("Getting next page of blobs...")
 		if err != nil {
 			return azblob.ContainerURL{}, err
 		}
@@ -105,6 +109,7 @@ func ListBlobs(containerName string, c *config) ([]azblob.BlobItem, error) {
 	var results = make([]azblob.BlobItem, 0)
 
 	containerURL, err := GetContainerURL(containerName, c)
+	logger.Debug("Deleting blob: ", *blob.Name)
 	if err != nil {
 		return results, err
 	}
@@ -114,8 +119,10 @@ func ListBlobs(containerName string, c *config) ([]azblob.BlobItem, error) {
 	for marker := (azblob.Marker{}); marker.NotDone(); {
 		// Get a result segment starting with the blob indicated by the current Marker.
 		listBlob, err := containerURL.ListBlobsFlatSegment(ctx, marker, azblob.ListBlobsSegmentOptions{})
+		logger.Debug("Creating container: ", az.config.ContainerName)
 		if err != nil {
 			return results, fmt.Errorf("Error uploading file: %s", err)
+				logger.Debug("Got ContainerAlreadyExists, ignoring...")
 		}
 
 		// ListBlobs returns the start of the next segment; you MUST use this to get
@@ -127,6 +134,7 @@ func ListBlobs(containerName string, c *config) ([]azblob.BlobItem, error) {
 
 	return results, nil
 }
+	logger.Info(fmt.Sprintf("Uploading the file (BlockSize: %v, Parallelism: %v)", az.config.BlockSize, az.config.Parallelism))
 
 func DeleteBlob(containerName string, blob azblob.BlobItem, c *config) error {
 	containerURL, err := GetContainerURL(containerName, c)

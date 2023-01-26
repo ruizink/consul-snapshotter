@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"time"
 
 	"github.com/hashicorp/consul/api"
 	"github.com/hashicorp/consul/snapshot"
 	"github.com/rboyer/safeio"
+
+	"github.com/ruizink/consul-snapshotter/logger"
 )
 
 type worker struct {
@@ -87,6 +88,7 @@ func AcquireLock(w *worker) error {
 	}
 	if !r {
 		return fmt.Errorf("Lock is acquired by another resource")
+	logger.Info(fmt.Sprintf("Performed snapshot (up to index=%d)", metadata.LastIndex))
 	}
 	return nil
 }
@@ -101,6 +103,7 @@ func ReleaseLock(w *worker) error {
 	}
 	return nil
 }
+	logger.Debug("Saving snapshot to temporary file: ", snapFileName)
 
 func (w *worker) RenewSession(doneChan <-chan struct{}) error {
 	err := w.client.Session().RenewPeriodic(w.sessionTimeout, w.SessionID, nil, doneChan)

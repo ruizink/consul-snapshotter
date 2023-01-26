@@ -3,11 +3,12 @@ package outputs
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
 	"strings"
 	"time"
+
+	"github.com/ruizink/consul-snapshotter/logger"
 )
 
 type LocalOutput struct {
@@ -21,22 +22,30 @@ func (o *LocalOutput) Save(snap string) error {
 	if err := os.Rename(snap, dstFile); err != nil {
 		return err
 	}
-	log.Println("Saved snapshot to:", dstFile)
+
+	logger.Info("Saved snapshot to: ", dstFile)
 	return nil
 }
 
 func (o *LocalOutput) ApplyRetentionPolicy() error {
-	if o.RetentionPeriod > 0 {
-		log.Println(fmt.Sprintf("Applying retention policy (remove files older than %v) in: %s", o.RetentionPeriod, o.DestinationPath))
-		files, err := findFilesOlderThan(o.DestinationPath, o.RetentionPeriod)
-		if err != nil {
-			return err
-		}
+	var errors error
 
-		if len(files) > 0 {
-			log.Println("List of files to remove:", strings.Join(files, ", "))
-			for _, file := range files {
-				os.Remove(file)
+	if o.RetentionPeriod <= 0 {
+		return nil
+	}
+
+	logger.Info(fmt.Sprintf("Applying local retention policy (remove files older than %v)", o.RetentionPeriod))
+	files, err := findFilesOlderThan(o.DestinationPath, o.RetentionPeriod)
+	if err != nil {
+		return err
+	}
+
+	if len(files) > 0 {
+		logger.Info("List of files to remove: ")
+		for _, file := range files {
+			logger.Info(file)
+			if err := os.Remove(file); err != nil {
+				errors = multierror.Append(errors, err)
 			}
 		}
 	}

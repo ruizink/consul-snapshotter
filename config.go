@@ -3,12 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+
+	"github.com/ruizink/consul-snapshotter/logger"
 )
 
 type consulConfig struct {
@@ -40,6 +41,7 @@ type config struct {
 	LocalOutputConfig localOutputConfig `json:"local"`
 	FilenamePrefix    string            `json:"filename-prefix"`
 	FileExtension     string            `json:"file-extension"`
+	LogLevel          string            `json:"log-level"`
 }
 
 func regFlagString(flag string, value string, usage string) {
@@ -72,6 +74,7 @@ func (c *config) loadConfig() error {
 	viper.SetDefault("cron", "@every 1h")
 	viper.SetDefault("filename-prefix", "consul-snapshot-")
 	viper.SetDefault("file-extension", ".snap")
+	viper.SetDefault("log-level", "info")
 	viper.SetDefault("consul.url", "http://127.0.0.1:8500")
 	viper.SetDefault("consul.lock-key", "consul-snapshotter/.lock")
 	viper.SetDefault("consul.lock-timeout", 10*time.Minute)
@@ -98,6 +101,7 @@ func (c *config) loadConfig() error {
 	regFlagDuration("azure-blob.retention-period", viper.GetDuration("azure-blob.retention-period"), "The duration that Azure Blob snapshots need to be retained (default \"0s\" - keep forever)")
 	regFlagString("local.destination-path", viper.GetString("local.destination-path"), "The local path where to save the snapshots")
 	regFlagDuration("local.retention-period", viper.GetDuration("local.retention-period"), "The duration that Local snapshots need to be retained (default \"0s\" - keep forever)")
+	regFlagString("log-level", viper.GetString("log-level"), "Verbosity (info, warn, debug) of the log")
 	regFlagBoolP("help", "h", false, "Prints this help message")
 
 	pflag.Parse()
@@ -125,7 +129,7 @@ func (c *config) loadConfig() error {
 	viper.AddConfigPath(viper.GetString("configdir"))
 
 	if err := viper.ReadInConfig(); err != nil {
-		log.Printf("[WARN] Could not load config file: %s \n", err)
+		logger.Warn("Could not load config file: ", err)
 	}
 
 	// Consul config
@@ -152,6 +156,7 @@ func (c *config) loadConfig() error {
 	c.Cron = viper.GetString("cron")
 	c.FilenamePrefix = viper.GetString("filename-prefix")
 	c.FileExtension = viper.GetString("file-extension")
+	c.LogLevel = viper.GetString("log-level")
 	c.Outputs = viper.GetStringSlice("outputs")
 	c.ConsulConfig = *consulConfig
 	c.AzureOutputConfig = *azureOutputConfig
