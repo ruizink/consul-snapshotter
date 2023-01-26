@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  consul:
+    image: consul:latest
+    hostname: consul
+    restart: always
+    command: "agent -server -bootstrap -ui -client=0.0.0.0"
+    ports:
+      - "8500:8500"
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    hostname: azurite
+    restart: always
+    command: "azurite --blobHost 0.0.0.0 --blobPort 10000"
+    ports:
+      - "10000:10000"
