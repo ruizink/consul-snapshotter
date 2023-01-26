@@ -41,3 +41,10 @@ clean:
 	go clean
 	rm -rf $(BIN_PATH)
 	rm -rf $(ARCHIVE_PATH)
+
+start-docker-env:
+	@docker compose up -d
+
+stop-docker-env:
+	@docker compose down
+	@docker compose rm

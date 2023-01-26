@@ -2,144 +2,154 @@ package azure
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"log"
 	"net/url"
 	"os"
+	"path"
+	"time"
 
-	"github.com/Azure/azure-pipeline-go/pipeline"
-	"github.com/Azure/azure-storage-blob-go/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
+
+	"github.com/ruizink/consul-snapshotter/logger"
 )
 
-type config struct {
-	accountName string
-	accountKey  string
-	sasToken    string
+type AzureConfig struct {
+	ContainerName    string
+	ContainerPath    string
+	Filename         string
+	StorageAccount   string
+	StorageAccessKey string
+	StorageSASToken  string
+	CreateContainer  bool
+	BlockSize        int64
+	Parallelism      uint16
+	Emulated         bool
+	EmulatorUrl      string
 }
 
-func AzureConfig(accountName, accountKey, sasToken string) (*config, error) {
-	if accountName == "" {
+type Azure struct {
+	client *azblob.Client
+	config *AzureConfig
+}
+
+func NewAzure(config *AzureConfig) (*Azure, error) {
+	var (
+		azclient *azblob.Client
+		azURL    *url.URL
+		err      error
+	)
+
+	if config.StorageAccount == "" {
 		return nil, fmt.Errorf("Azure Account Name not provided")
 	}
-	if accountKey == "" && sasToken == "" {
+	if config.StorageAccessKey == "" && config.StorageSASToken == "" {
 		return nil, fmt.Errorf("Azure Account Access Key or SAS Token must be provided")
 	}
-	c := &config{
-		accountName: accountName,
-		accountKey:  accountKey,
-		sasToken:    sasToken,
-	}
-	return c, nil
-}
 
-func AuthenticateAccountKey(containerName string, c *config) (pipeline.Pipeline, error) {
-	// Create a default request pipeline using your storage account name and account key
-	credential, err := azblob.NewSharedKeyCredential(c.accountName, c.accountKey)
-	if err != nil {
-		return nil, fmt.Errorf("Invalid credentials: %s", err)
-	}
-	p := azblob.NewPipeline(credential, azblob.PipelineOptions{})
-
-	return p, err
-}
-
-func AuthenticateSASToken(containerName string, c *config) pipeline.Pipeline {
-	return azblob.NewPipeline(azblob.NewAnonymousCredential(), azblob.PipelineOptions{})
-}
-
-func GetContainerURL(containerName string, c *config) (azblob.ContainerURL, error) {
-	var p pipeline.Pipeline
-	var queryParameters string
-
-	if c.sasToken != "" {
-		p = AuthenticateSASToken(containerName, c)
-		queryParameters = "?" + c.sasToken
+	// create azure client
+	if config.StorageSASToken != "" {
+		if config.Emulated {
+			azURL, _ = url.Parse(fmt.Sprintf("%s/%s", config.EmulatorUrl, config.StorageAccount))
+		} else {
+			azURL, _ = url.Parse(fmt.Sprintf("https://%s.blob.core.windows.net", config.StorageAccount))
+		}
+		logger.Debug("Using Azure Blob URL: ", azURL.String())
+		azclient, err = azblob.NewClientWithNoCredential(azURL.String(), nil)
 	} else {
-		var err error
-		p, err = AuthenticateAccountKey(containerName, c)
-		if err != nil {
-			return azblob.ContainerURL{}, err
+		if config.Emulated {
+			azURL, _ = url.Parse(fmt.Sprintf("%s/%s/?%s", config.EmulatorUrl, config.StorageAccount, config.StorageSASToken))
+		} else {
+			azURL, _ = url.Parse(fmt.Sprintf("https://%s.blob.core.windows.net/?%s", config.StorageAccount, config.StorageSASToken))
 		}
+		cred, cerr := azblob.NewSharedKeyCredential(config.StorageAccount, config.StorageAccessKey)
+		if cerr != nil {
+			return nil, cerr
+		}
+		logger.Debug("Using Azure Blob URL: ", azURL.String())
+		azclient, err = azblob.NewClientWithSharedKeyCredential(azURL.String(), cred, nil)
 	}
 
-	// TODO: Allow the URL to be a parameter
-	// Setup the blob service URL endpoint
-	URL, _ := url.Parse(
-		fmt.Sprintf("https://%s.blob.core.windows.net/%s%s", c.accountName, containerName, queryParameters))
+	if err != nil {
+		return nil, fmt.Errorf("error creating azure client: %s", err)
+	}
 
-	// Create a ContainerURL object using the container URL and a request pipeline
-	return azblob.NewContainerURL(*URL, p), nil
+	return &Azure{client: azclient, config: config}, nil
 }
 
-func UploadBlob(srcFile, destFile, containerName string, c *config) (int, error) {
-	containerURL, err := GetContainerURL(containerName, c)
-	if err != nil {
-		return 0, err
-	}
+func (az *Azure) ListBlobsOlderThan(period time.Duration) ([]*container.BlobItem, error) {
+	var results = make([]*container.BlobItem, 0)
 
-	ctx := context.Background()
+	// blob listings are returned across multiple pages
+	pager := az.client.NewListBlobsFlatPager(az.config.ContainerName, nil)
 
-	// Create a BlobURL object using the ContainerURL
-	blobURL := containerURL.NewBlockBlobURL(destFile)
-	file, err := os.Open(srcFile)
-	if err != nil {
-		return 0, fmt.Errorf("Error opening file: %s", err)
-	}
-
-	// TODO: Allow the Parallelism to be a parameter
-	// Upload the blob
-	uBlockSize := int64(4 * 1024 * 1024)
-	uParallelism := uint16(16)
-	log.Println(fmt.Sprintf("Uploading the file (BlockSize: %v, Parallelism: %v)", uBlockSize, uParallelism))
-	_, err = azblob.UploadFileToBlockBlob(ctx, file, blobURL, azblob.UploadToBlockBlobOptions{
-		BlockSize:   uBlockSize,
-		Parallelism: uParallelism})
-	if err != nil {
-		return 0, fmt.Errorf("Error uploading file: %s", err)
-	}
-
-	return 1, nil
-}
-
-func ListBlobs(containerName string, c *config) ([]azblob.BlobItem, error) {
-	var results = make([]azblob.BlobItem, 0)
-
-	containerURL, err := GetContainerURL(containerName, c)
-	if err != nil {
-		return results, err
-	}
-
-	ctx := context.Background()
-
-	for marker := (azblob.Marker{}); marker.NotDone(); {
-		// Get a result segment starting with the blob indicated by the current Marker.
-		listBlob, err := containerURL.ListBlobsFlatSegment(ctx, marker, azblob.ListBlobsSegmentOptions{})
+	// continue fetching pages until no more remain
+	for pager.More() {
+		// advance to the next page
+		logger.Debug("Getting next page of blobs...")
+		page, err := pager.NextPage(context.Background())
 		if err != nil {
-			return results, fmt.Errorf("Error uploading file: %s", err)
+			return nil, err
 		}
 
-		// ListBlobs returns the start of the next segment; you MUST use this to get
-		// the next segment (after processing the current result segment).
-		marker = listBlob.NextMarker
-
-		results = append(results, listBlob.Segment.BlobItems...)
+		for _, blob := range page.Segment.BlobItems {
+			if time.Since(*blob.Properties.LastModified) > period {
+				results = append(results, blob)
+			}
+		}
 	}
 
 	return results, nil
 }
 
-func DeleteBlob(containerName string, blob azblob.BlobItem, c *config) error {
-	containerURL, err := GetContainerURL(containerName, c)
+func (az *Azure) DeleteBlob(blob *container.BlobItem) error {
+	logger.Debug("Deleting blob: ", *blob.Name)
+	_, err := az.client.DeleteBlob(context.Background(), az.config.ContainerName, *blob.Name, nil)
 	if err != nil {
 		return err
 	}
 
-	blobUrl := containerURL.NewBlobURL(blob.Name)
-	ctx := context.Background()
+	return nil
+}
 
-	_, err = blobUrl.Delete(ctx, azblob.DeleteSnapshotsOptionInclude, azblob.BlobAccessConditions{})
+func (az *Azure) UploadBlob(srcFile string) error {
+	// Create the container if it doesn't exist
+	if az.config.CreateContainer {
+		logger.Debug("Creating container: ", az.config.ContainerName)
+		// _, err := azclient.CreateContainer(context.Background(), az.ContainerName, &azblob.CreateContainerOptions{
+		// 	Access: azblob.PublicAccessNone,
+		// })
+		_, err := az.client.CreateContainer(context.Background(), az.config.ContainerName, nil)
+		az.client.URL()
+
+		var respErr *azcore.ResponseError
+		if err != nil {
+			if !(errors.As(err, &respErr) && respErr.ErrorCode == "ContainerAlreadyExists") {
+				return fmt.Errorf("error creating container: %s", err)
+			} else {
+				logger.Debug("Got ContainerAlreadyExists, ignoring...")
+			}
+		}
+	}
+
+	// Upload the blob
+	logger.Info(fmt.Sprintf("Uploading the file (BlockSize: %v, Parallelism: %v)", az.config.BlockSize, az.config.Parallelism))
+
+	file, err := os.Open(srcFile)
 	if err != nil {
-		return err
+		return fmt.Errorf("error opening file: %s", err)
+	}
+
+	destFile := path.Join(az.config.ContainerPath, az.config.Filename)
+
+	_, err = az.client.UploadFile(context.Background(), az.config.ContainerName, destFile, file, &azblob.UploadFileOptions{
+		BlockSize:   az.config.BlockSize,
+		Concurrency: az.config.Parallelism,
+	})
+	if err != nil {
+		return fmt.Errorf("error uploading file: %s", err)
 	}
 
 	return nil
