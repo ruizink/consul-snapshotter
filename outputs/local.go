@@ -1,25 +1,44 @@
 package outputs
 
 import (
+	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
-	"strings"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/ruizink/consul-snapshotter/logger"
 )
 
 type LocalOutput struct {
-	DestinationPath string
-	Filename        string
-	RetentionPeriod time.Duration
+	DestinationPath   string
+	Filename          string
+	CreateDestination bool
+	RetentionPeriod   time.Duration
 }
 
 func (o *LocalOutput) Save(snap string) error {
+	// create destination dir if it doesn't exist
+	if o.CreateDestination {
+		if _, err := os.Stat(o.DestinationPath); errors.Is(err, os.ErrNotExist) {
+			err := os.Mkdir(o.DestinationPath, os.ModePerm)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	dstFile := path.Join(o.DestinationPath, o.Filename)
-	if err := os.Rename(snap, dstFile); err != nil {
+
+	//Read all the contents of the  original file
+	bytesRead, err := os.ReadFile(snap)
+	if err != nil {
+		return err
+	}
+
+	//Copy all the contents to the desitination file
+	err = os.WriteFile(dstFile, bytesRead, 0644)
+	if err != nil {
 		return err
 	}
 
@@ -49,21 +68,23 @@ func (o *LocalOutput) ApplyRetentionPolicy() error {
 			}
 		}
 	}
-	return nil
+
+	return errors
 }
 
 func findFilesOlderThan(dir string, period time.Duration) (fileList []string, err error) {
-	files, err := ioutil.ReadDir(dir)
+	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return
+		return nil, err
 	}
 
-	for _, file := range files {
+	for _, entry := range entries {
+		file, _ := entry.Info()
 		if file.Mode().IsRegular() {
-			if time.Now().Sub(file.ModTime()) > period {
+			if time.Since(file.ModTime()) > period {
 				fileList = append(fileList, path.Join(dir, file.Name()))
 			}
 		}
 	}
-	return
+	return fileList, nil
 }

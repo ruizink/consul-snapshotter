@@ -1,23 +1,32 @@
-cron: "@every 1h"
-filename-prefix: "consul-snapshot-"
-file-extension: ".snap"
+# cron: "@every 1h"
+# filename-prefix: "consul-snapshot-"
+# file-extension: ".snap"
+# log-level: info
 
-consul:
-    url: http://127.0.0.1:8500
-    token: ""
-    lock-key: "consul-snapshotter/.lock"
-    lock-timeout: "10m"
+# consul:
+#     url: http://127.0.0.1:8500
+#     token: ""
+#     lock-key: "consul-snapshotter/.lock"
+#     lock-timeout: "10m"
 
-local:
-    destination-path: "/tmp/snapshots"
+# local:
+#     destination-path: "/tmp/snapshots"
+#     create-destination: false
+#     retention-period: 24h
 
-azure-blob:
-    container-name: "container_name"
-    container-path: "consul/snapshots"
-    storage-account: "azure_account"
-    # storage-access-key: "" #
-    # storage-sas-token: ""  # Use either of these, SAS token takes precedence
+# azure-blob:
+#     container-name: "container_name"
+#     container-path: "consul/snapshots"
+#     storage-account: "azure_account"
+#     storage-access-key: "" #
+#     storage-sas-token: ""  # Use either of these, SAS token takes precedence
+#     create-container: true
+#     block-size: 100000
+#     parallelism: 2
+#     emulated: true
+#     emulator-url: http://127.0.0.1:10000
+#     retention-period: 24h
 
-outputs:
-    - "local"
-    # - "azure_blob"
+# outputs:
+#     - "local"
+#     - "azure_blob"

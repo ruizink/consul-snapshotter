@@ -9,11 +9,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ruizink/consul-snapshotter/outputs"
-
+	"github.com/hashicorp/go-multierror"
 	"github.com/robfig/cron"
+
+	"github.com/ruizink/consul-snapshotter/azure"
 	"github.com/ruizink/consul-snapshotter/consul"
 	"github.com/ruizink/consul-snapshotter/logger"
+	"github.com/ruizink/consul-snapshotter/outputs"
 )
 
 func main() {
@@ -50,7 +52,7 @@ func main() {
 	}()
 
 	if err := run(ctx, c, os.Stdout); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
+		// fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
 }
@@ -77,45 +79,65 @@ func run(ctx context.Context, c *config, stdout io.Writer) error {
 		}
 		logger.Debug("Acquired lock for session ID: ", consulWorker.SessionID)
 
+		// Cleanup: Release the lock
+		defer func() {
+			if err := consulWorker.ReleaseLock(); err != nil {
+				logger.Error("Could not release lock: ", err)
+			}
+			logger.Debug("Released lock for session ID: ", consulWorker.SessionID)
+		}()
+
 		// Start renewing the session until doneChan is closed
 		doneChan := make(chan struct{})
-		go worker.RenewSession(doneChan)
+		go consulWorker.RenewSession(doneChan)
 
-		// Close the channel used for session renewal
+		// Cleanup: Close the channel used for session renewal
 		defer close(doneChan)
 
 		// Get consul snapshot
-		snap, err := consul.GetSnapshot(worker)
+		snap, err := consulWorker.GetSnapshot()
 		if err != nil {
 			logger.Error("Could not perform snapshot: ", err)
 			return err
 		}
 
-		// Export the snapshot to all the configured outputs
-		processOutputs(snap, c)
+		// Cleanup: Remove the temporary snapshot
+		defer os.Remove(snap)
 
-		// Remove the temporary snapshot
-		os.Remove(snap)
+		// Export the snapshot to all the configured outputs
+		if err := processOutputs(snap, c); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	runSnapshotterCron := func() {
+		_ = runSnapshotter()
+	}
+
+	if c.Cron != "" {
 		logger.Info("Starting with cron expression: ", c.Cron)
 
-		// Release the lock
-		if err := consul.ReleaseLock(worker); err != nil {
-			log.Println("Could not release lock:", err)
-		}
-		log.Println("Released lock for session ID", worker.SessionID)
-	})
-	cron.Start()
+		cron := cron.New()
+		cron.AddFunc(c.Cron, runSnapshotterCron)
+		cron.Start()
 
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
+		for {
+			select {
+			case <-ctx.Done():
+				return nil
+			}
 		}
+	} else {
 		logger.Info("Starting a single execution...")
+		return runSnapshotter()
 	}
 }
 
-func processOutputs(snap string, c *config) {
+func processOutputs(snap string, c *config) error {
+
+	var errors error
 
 	outputFileName := fmt.Sprintf("%s%v%s", c.FilenamePrefix, time.Now().UnixNano(), c.FileExtension)
 
@@ -166,7 +188,6 @@ func processOutputs(snap string, c *config) {
 				errors = multierror.Append(errors, err)
 				continue
 			}
-			o.Save(snap)
 
 			if err := o.ApplyRetentionPolicy(); err != nil {
 				logger.Error(err)
@@ -175,4 +196,5 @@ func processOutputs(snap string, c *config) {
 			}
 		}
 	}
+	return errors
 }

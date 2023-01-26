@@ -2,30 +2,24 @@ package outputs
 
 import (
 	"fmt"
-	"path"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/ruizink/consul-snapshotter/azure"
 	"github.com/ruizink/consul-snapshotter/logger"
 )
 
 type AzureBlobOutput struct {
-	ContainerName    string
-	ContainerPath    string
-	Filename         string
-	StorageAccount   string
-	StorageAccessKey string
-	StorageSASToken  string
-	RetentionPeriod  time.Duration
+	AzureConfig     *azure.AzureConfig
+	RetentionPeriod time.Duration
 }
 
-func (o *AzureBlobOutput) Save(snap string) {
-	destFile := path.Join(o.ContainerPath, o.Filename)
-	config, err := azure.AzureConfig(o.StorageAccount, o.StorageAccessKey, o.StorageSASToken)
+func (o *AzureBlobOutput) Save(snap string) error {
+	az, err := azure.NewAzure(o.AzureConfig)
 	if err != nil {
 		return fmt.Errorf("invalid azure config: %v", err)
 	}
-	_, err = azure.UploadBlob(snap, destFile, o.ContainerName, config)
+	err = az.UploadBlob(snap)
 	if err != nil {
 		return fmt.Errorf("error uploading snapshot file: %v", err)
 	}
@@ -42,17 +36,12 @@ func (o *AzureBlobOutput) ApplyRetentionPolicy() error {
 
 	logger.Info(fmt.Sprintf("Applying Azure Blob Storage retention policy (remove blobs older than %v)", o.RetentionPeriod))
 
-	config, err := azure.AzureConfig(o.StorageAccount, o.StorageAccessKey, o.StorageSASToken)
+	azure, err := azure.NewAzure(o.AzureConfig)
 	if err != nil {
 		return err
 	}
 
-	blobList, err := azure.ListBlobs(o.ContainerName, config)
-
-	for _, blob := range blobList {
-		if time.Now().Sub(blob.Properties.LastModified) <= o.RetentionPeriod {
-			continue
-		}
+	blobList, _ := azure.ListBlobsOlderThan(o.RetentionPeriod)
 
 	if len(blobList) > 0 {
 		logger.Info("List of Azure Blobs to remove:")
@@ -64,5 +53,5 @@ func (o *AzureBlobOutput) ApplyRetentionPolicy() error {
 		}
 	}
 
-	return nil
+	return errors
 }

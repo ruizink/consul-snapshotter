@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/hashicorp/consul/api"
@@ -14,48 +14,14 @@ import (
 	"github.com/ruizink/consul-snapshotter/logger"
 )
 
-type worker struct {
+type Worker struct {
 	client         *api.Client
 	key            string
 	SessionID      string
 	sessionTimeout string
 }
 
-func GetSnapshot(w *worker) (string, error) {
-
-	var buf bytes.Buffer
-
-	// Take the snapshot
-	snap, metadata, err := w.client.Snapshot().Save(&api.QueryOptions{})
-	if err != nil {
-		return "", fmt.Errorf("Error requesting the snapshot: %v", err)
-	}
-	defer snap.Close()
-	log.Println(fmt.Sprintf("Performed snapshot (up to index=%d)", metadata.LastIndex))
-
-	tee := io.TeeReader(snap, &buf)
-
-	// Verify the snapshot
-	if _, err := snapshot.Verify(tee); err != nil {
-		return "", fmt.Errorf("Error verifying snapshot: %v", err)
-	}
-
-	// Save the verified snapshot to a temporary location
-	snapFile, err := ioutil.TempFile("", "")
-	if err != nil {
-		return "", fmt.Errorf("Error creating temp file: %v", err)
-	}
-	snapFileName := snapFile.Name()
-	log.Println("Saving snapshot to temporary file: ", snapFileName)
-
-	if _, err := safeio.WriteToFile(&buf, snapFileName, 0644); err != nil {
-		return "", fmt.Errorf("Error writing snapshot file: %v", err)
-	}
-
-	return snapFileName, nil
-}
-
-func NewWorker(consulURL, consulToken, key string, sessionTimeout time.Duration) (*worker, error) {
+func NewConsul(consulURL, consulToken, key string, sessionTimeout time.Duration) (*Worker, error) {
 
 	// Create the HTTP client
 	conf := api.DefaultConfig()
@@ -63,12 +29,11 @@ func NewWorker(consulURL, consulToken, key string, sessionTimeout time.Duration)
 	conf.Token = consulToken
 	client, err := api.NewClient(conf)
 	if err != nil {
-		log.Println("Could not create a new client:", err)
-		return nil, err
+		return nil, fmt.Errorf("could not create a new client: %v", err)
 	}
 
-	// create new session for this worker
-	w := &worker{
+	// create new session for this Worker
+	w := &Worker{
 		client:         client,
 		key:            key,
 		sessionTimeout: sessionTimeout.String(),
@@ -77,43 +42,42 @@ func NewWorker(consulURL, consulToken, key string, sessionTimeout time.Duration)
 	return w, nil
 }
 
-func AcquireLock(w *worker) error {
-	if err := w.createSession(); err != nil {
-		return err
-	}
+func (w *Worker) GetSnapshot() (string, error) {
 
-	r, err := w.acquireLock()
+	var buf bytes.Buffer
+
+	// Take the snapshot
+	snap, metadata, err := w.client.Snapshot().Save(&api.QueryOptions{})
 	if err != nil {
-		return err
+		return "", fmt.Errorf("error requesting the snapshot: %v", err)
 	}
-	if !r {
-		return fmt.Errorf("Lock is acquired by another resource")
+	defer snap.Close()
 	logger.Info(fmt.Sprintf("Performed snapshot (up to index=%d)", metadata.LastIndex))
-	}
-	return nil
-}
 
-func ReleaseLock(w *worker) error {
-	_, err := w.releaseLock()
+	tee := io.TeeReader(snap, &buf)
+
+	// Verify the snapshot
+	if _, err := snapshot.Verify(tee); err != nil {
+		return "", fmt.Errorf("error verifying snapshot: %v", err)
+	}
+
+	// Save the verified snapshot to a temporary location
+	snapFile, err := os.CreateTemp("", "")
 	if err != nil {
-		return err
+		return "", fmt.Errorf("error creating temp file: %v", err)
 	}
-	if err := w.destroySession(); err != nil {
-		return err
-	}
-	return nil
-}
+	snapFileName := snapFile.Name()
 	logger.Debug("Saving snapshot to temporary file: ", snapFileName)
 
-func (w *worker) RenewSession(doneChan <-chan struct{}) error {
-	err := w.client.Session().RenewPeriodic(w.sessionTimeout, w.SessionID, nil, doneChan)
-	if err != nil {
-		return err
+	if _, err := safeio.WriteToFile(&buf, snapFileName, 0644); err != nil {
+		return "", fmt.Errorf("error writing snapshot file: %v", err)
 	}
-	return nil
+
+	return snapFileName, nil
 }
 
-func (w *worker) createSession() error {
+func (w *Worker) AcquireLock() error {
+	// create session
 	sessionConf := &api.SessionEntry{
 		TTL:      w.sessionTimeout,
 		Behavior: "delete",
@@ -125,36 +89,48 @@ func (w *worker) createSession() error {
 	}
 
 	w.SessionID = sessionID
+
+	// acquire lock
+	KVPair := &api.KVPair{
+		Key:     w.key,
+		Value:   []byte(w.SessionID),
+		Session: w.SessionID,
+	}
+
+	r, _, err := w.client.KV().Acquire(KVPair, nil)
+	if err != nil {
+		return err
+	}
+	if !r {
+		return fmt.Errorf("lock is acquired by another resource")
+	}
 	return nil
 }
 
-func (w *worker) acquireLock() (bool, error) {
+func (w *Worker) ReleaseLock() error {
 	KVPair := &api.KVPair{
 		Key:     w.key,
 		Value:   []byte(w.SessionID),
 		Session: w.SessionID,
 	}
 
-	acquired, _, err := w.client.KV().Acquire(KVPair, nil)
-	return acquired, err
-}
-
-func (w *worker) releaseLock() (bool, error) {
-	KVPair := &api.KVPair{
-		Key:     w.key,
-		Value:   []byte(w.SessionID),
-		Session: w.SessionID,
+	// release lock
+	if _, _, err := w.client.KV().Release(KVPair, nil); err != nil {
+		return err
 	}
 
-	released, _, err := w.client.KV().Release(KVPair, nil)
-	return released, err
+	// destroy session
+	if _, err := w.client.Session().Destroy(w.SessionID, nil); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (w *worker) destroySession() error {
-	_, err := w.client.Session().Destroy(w.SessionID, nil)
+func (w *Worker) RenewSession(doneChan <-chan struct{}) error {
+	err := w.client.Session().RenewPeriodic(w.sessionTimeout, w.SessionID, nil, doneChan)
 	if err != nil {
-		return fmt.Errorf("Could not destroy session: %v", err)
+		return err
 	}
-
 	return nil
 }
