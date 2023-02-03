@@ -15,15 +15,15 @@ Build for specific platform or architecture:
 
 `OS=linux ARCH=arm64 make build`
 
-Create archive:
+Create package:
 
-`make archive`
+`make package`
 
-Create archive for specific platform, architecture or format:
+Create package for specific platform, architecture or format:
 
-`OS=linux ARCH=arm64 ARCHIVE_FORMAT=tgz make archive`
+`OS=linux ARCH=arm64 PACKAGE_FORMAT=tgz make package`
 
-Generate archives checksum:
+Generate packages checksum:
 
 `make checksum`
 
