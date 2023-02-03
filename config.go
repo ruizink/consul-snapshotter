@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/ruizink/consul-snapshotter/logger"
+	"github.com/ruizink/consul-snapshotter/version"
 )
 
 type consulConfig struct {
@@ -139,6 +140,7 @@ func (c *config) loadConfig() error {
 	regFlagBool("local.create-destination", viper.GetBool("local.create-destination"), "Behavior when the destination-path does not exist (default: false)")
 	regFlagDuration("local.retention-period", viper.GetDuration("local.retention-period"), "Duration that Local snapshots need to be retained (default: \"0s\" - keep forever)")
 	regFlagBoolP("help", "h", false, "Prints this help message")
+	regFlagBoolP("version", "V", false, "Prints the version")
 
 	pflag.Parse()
 
@@ -150,6 +152,13 @@ func (c *config) loadConfig() error {
 	if viper.GetBool("help") {
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
 		pflag.PrintDefaults()
+		os.Exit(0)
+	}
+
+	// print version if --version or -V
+	if viper.GetBool("version") {
+		fmt.Fprintf(os.Stderr, "v%s\n", version.Version)
+		fmt.Fprintf(os.Stderr, "(Build date: %s, Git commit: %s)\n", version.BuildDate, version.GitCommit)
 		os.Exit(0)
 	}
 
