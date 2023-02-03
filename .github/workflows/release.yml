@@ -11,7 +11,7 @@ jobs:
     uses: ./.github/workflows/package.yml
   github-release:
     name: Github Release
-    needs: build-artifacts
+    needs: package-artifacts
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
