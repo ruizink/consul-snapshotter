@@ -2,36 +2,26 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    tags: [ 'v*.*.*' ]
 
 jobs:
-  build:
-    name: Release
+  build-artifacts:
+    uses: ./.github/workflows/build.yml
+  package-artifacts:
+    uses: ./.github/workflows/package.yml
+  github-release:
+    name: Github Release
+    needs: package-artifacts
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
 
-      - name: Set up Go
-        uses: actions/setup-go@v3
+      - uses: actions/download-artifact@v3
         with:
-          go-version: 1.19
-  
-      - name: Build project
-        run: |
-          make build
-          make archive
-          cd archive && sha256sum * > SHA256SUM
+          path: build/
 
-      - name: Release
-        uses: softprops/action-gh-release@v1
+      - uses: ncipollo/release-action@v1
         with:
           name: Release ${{ github.ref_name }}
-          draft: false
-          prerelease: false
-          files: |
-            archive/consul-snapshotter_linux_amd64.zip
-            archive/consul-snapshotter_darwin_amd64.zip
-            archive/consul-snapshotter_linux_amd64.tar.gz
-            archive/consul-snapshotter_darwin_amd64.tar.gz
-            archive/SHA256SUM
+          artifacts: build/archive/*
+          token: ${{ secrets.GITHUB_TOKEN }}

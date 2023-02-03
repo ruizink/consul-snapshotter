@@ -1,0 +1,62 @@
+on:
+  workflow_call:
+    outputs:
+      go-version:
+        value: ${{ jobs.info.outputs.go-version }}
+      app-name:
+        value: ${{ jobs.info.outputs.app-name }}
+      app-version:
+        value: ${{ jobs.info.outputs.app-version }}
+      git-commit:
+        value: ${{ jobs.info.outputs.git-commit }}
+
+name: Retrieve Build Info
+
+jobs:
+  info:
+    runs-on: ubuntu-latest
+    outputs:
+      go-version: ${{ steps.go-version.outputs.go-version }}
+      app-name: ${{ steps.app-name.outputs.app-name }}
+      app-version: ${{ steps.app-version.outputs.app-version }}
+      git-commit: ${{ steps.git-commit.outputs.git-commit }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Determine Go version
+        id: go-version
+        # Use .go-version as our source of truth for current Go
+        run: |
+          echo "Building with Go $(cat .go-version)"
+          echo "go-version=$(cat .go-version)" >> $GITHUB_OUTPUT
+
+      - name: Get app name
+        id: app-name
+        # retrieve app-name from the repository name
+        run: |
+          NAME=$(basename "${{ github.repository }}")
+          echo "App Name: ${NAME}"
+          echo "app-name=${NAME}" >> $GITHUB_OUTPUT
+
+      - name: Get app version
+        id: app-version
+        # strip 'v' from tag name if ref_type is tag or use git sha
+        run: |
+          [[ "${{ github.ref_type }}" = "tag" ]] && TAG=${{ github.ref_name }} && VERSION=${TAG#v}
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG=${{ github.ref_name }}
+            VERSION=${TAG#v}
+          else
+            SHA=${{ github.sha }}
+            VERSION=${SHA::8}
+          fi
+          echo "Using app version: ${VERSION}"
+          echo "app-version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Get git commit
+        id: git-commit
+        # use the first 8 chars of the git sha
+        run: |
+          SHA=${{ github.sha }}
+          echo "Found git sha: ${SHA}"
+          echo "git-commit=${SHA::8}" >> $GITHUB_OUTPUT
