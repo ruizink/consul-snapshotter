@@ -1,16 +1,31 @@
+
 # consul-snapshotter
+
+[![Build Status](https://github.com/ruizink/consul-snapshotter/actions/workflows/build.yml/badge.svg)](https://github.com/ruizink/consul-snapshotter/actions/workflows/build.yml)
 
 A tool to help you perform Consul backups periodically
 
 ## Build
 
-Build for all platforms:
+Build:
 
 `make build`
 
-Build for specific platform:
+Build for specific platform or architecture:
 
-`make build-linux`
+`OS=linux ARCH=arm64 make build`
+
+Create archive:
+
+`make archive`
+
+Create archive for specific platform, architecture or format:
+
+`OS=linux ARCH=arm64 ARCHIVE_FORMAT=tgz make archive`
+
+Generate archives checksum:
+
+`make checksum`
 
 Clean the build environment:
 

@@ -1,0 +1,61 @@
+name: Build
+
+on:
+  workflow_call:
+
+jobs:
+  get-build-info:
+    uses: ./.github/workflows/buildinfo.yml
+
+  package-linux:
+    needs:
+      - get-build-info
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ "linux" ]
+        arch: [ "arm", "arm64", "386", "amd64", "ppc64le"]
+        format: ["zip", "tgz" ]
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/download-artifact@v3
+        with:
+          path: build/
+
+      - name: Package
+        run: OS=${{ matrix.os }} ARCH=${{ matrix.arch }} VERSION=${{ needs.get-build-info.outputs.app-version }} ARCHIVE_FORMAT=${{ matrix.format }} make archive
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.os }}_${{ matrix.arch }}
+          path: build/archive/**
+          if-no-files-found: error
+
+  package-darwin:
+    needs:
+      - get-build-info
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ "darwin" ]
+        arch: [ "amd64", "arm64" ]
+        format: ["zip", "tgz" ]
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/download-artifact@v3
+        with:
+          path: build/
+
+      - name: Package
+        run: OS=${{ matrix.os }} ARCH=${{ matrix.arch }} VERSION=${{ needs.get-build-info.outputs.app-version }} ARCHIVE_FORMAT=${{ matrix.format }} make archive
+
+      - name: Generate checksum
+        run: make checksum
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.os }}_${{ matrix.arch }}
+          path: build/archive/**
+          if-no-files-found: error

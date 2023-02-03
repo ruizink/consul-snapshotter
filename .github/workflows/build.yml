@@ -5,17 +5,69 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  workflow_call:
+  workflow_dispatch:
 
 jobs:
-  build:
+  get-build-info:
+    uses: ./.github/workflows/buildinfo.yml
+
+  build-linux:
+    needs:
+      - get-build-info
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ "linux" ]
+        arch: [ "arm", "arm64", "386", "amd64", "ppc64le"]
+        go: [ "${{ needs.get-build-info.outputs.go-version }}" ]
+      fail-fast: true
+
+    name: Go ${{ matrix.go }} ${{ matrix.os }} ${{ matrix.arch }} build
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Set up Go
-      uses: actions/setup-go@v3
-      with:
-        go-version: 1.19
+      - name: Set up Go ${{ matrix.go }}
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ matrix.go }}
 
-    - name: Build
-      run: make build
+      - name: Build
+        run: OS=${{ matrix.os }} ARCH=${{ matrix.arch }} VERSION=${{ needs.get-build-info.outputs.app-version }} GIT_SHA=${{ needs.get-build-info.outputs.git-commit }} make build
+      
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.os }}_${{ matrix.arch }}
+          path: build/**
+          if-no-files-found: error
+
+  build-darwin:
+    needs:
+      - get-build-info
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ "darwin" ]
+        arch: [ "amd64", "arm64" ]
+        go: [ "${{ needs.get-build-info.outputs.go-version }}" ]
+      fail-fast: true
+
+    name: Go ${{ matrix.go }} ${{ matrix.os }} ${{ matrix.arch }} build
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go ${{ matrix.go }}
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Build
+        run: OS=${{ matrix.os }} ARCH=${{ matrix.arch }} VERSION=${{ needs.get-build-info.outputs.app-version }} GIT_SHA=${{ needs.get-build-info.outputs.git-commit }} make build
+      
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.os }}_${{ matrix.arch }}
+          path: build/**
+          if-no-files-found: error
+
