@@ -1,0 +1,42 @@
+on:
+  workflow_call:
+    outputs:
+      go-version:
+        value: ${{ jobs.get-build-info.outputs.go-version }}
+      app-version:
+        value: ${{ jobs.get-build-info.outputs.app-version }}
+      git-commit:
+        value: ${{ jobs.get-build-info.outputs.git-commit }}
+
+jobs:
+  get-build-info:
+    runs-on: ubuntu-latest
+    outputs:
+      go-version: ${{ steps.go-version.outputs.go-version }}
+      app-version: ${{ steps.app-version.outputs.app-version }}
+      git-commit: ${{ steps.git-commit.outputs.git-commit }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Determine Go version
+        id: go-version
+        # Use .go-version as our source of truth for current Go
+        run: |
+          echo "Building with Go $(cat .go-version)"
+          echo "go-version=$(cat .go-version)" >> $GITHUB_OUTPUT
+
+      - name: Get version from git tag
+        id: app-version
+        # strip 'v' from tag name
+        run: |
+          TAG=${{ github.ref_name }}
+          echo "Found git tag ${TAG}"
+          echo "app-version=${TAG#v}" >> $GITHUB_OUTPUT
+
+      - name: Get git commit
+        id: git-commit
+        # use the first 8 chars of the git sha
+        run: |
+          SHA=${{ github.sha }}
+          echo "Found git sha: ${SHA}"
+          echo "git-commit=${SHA::8}" >> $GITHUB_OUTPUT
