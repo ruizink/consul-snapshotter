@@ -1,4 +1,4 @@
-name: Build
+name: Build and Package
 
 on:
   workflow_call:
@@ -16,20 +16,24 @@ jobs:
         os: [ "linux" ]
         arch: [ "arm", "arm64", "386", "amd64", "ppc64le"]
         format: ["zip", "tgz" ]
+      fail-fast: true
+
+    name: "Package ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.format }}"
     steps:
       - uses: actions/checkout@v3
 
       - uses: actions/download-artifact@v3
         with:
-          path: build/
+          name: bin
+          path: build/bin/
 
       - name: Package
-        run: OS=${{ matrix.os }} ARCH=${{ matrix.arch }} VERSION=${{ needs.build.outputs.app-version }} ARCHIVE_FORMAT=${{ matrix.format }} make archive
+        run: OS=${{ matrix.os }} ARCH=${{ matrix.arch }} VERSION=${{ needs.build.outputs.app-version }} PACKAGE_FORMAT=${{ matrix.format }} make package
 
       - uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.os }}_${{ matrix.arch }}
-          path: build/archive/**
+          name: package
+          path: build/package/**
           if-no-files-found: error
 
   package-darwin:
@@ -41,21 +45,46 @@ jobs:
         os: [ "darwin" ]
         arch: [ "amd64", "arm64" ]
         format: ["zip", "tgz" ]
+      fail-fast: true
+    
+    name: "Package ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.format }}"
     steps:
       - uses: actions/checkout@v3
 
       - uses: actions/download-artifact@v3
         with:
-          path: build/
+          name: bin
+          path: build/bin/
 
       - name: Package
-        run: OS=${{ matrix.os }} ARCH=${{ matrix.arch }} VERSION=${{ needs.build.outputs.app-version }} ARCHIVE_FORMAT=${{ matrix.format }} make archive
+        run: OS=${{ matrix.os }} ARCH=${{ matrix.arch }} VERSION=${{ needs.build.outputs.app-version }} PACKAGE_FORMAT=${{ matrix.format }} make package
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: package
+          path: build/package/**
+          if-no-files-found: error
+
+  checksum:
+    name: Generate checksum
+    needs:
+      - package-linux
+      - package-darwin
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: package
+          path: build/package/
 
       - name: Generate checksum
         run: make checksum
 
       - uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.os }}_${{ matrix.arch }}
-          path: build/archive/**
+          name: checksum
+          path: build/checksum/**
           if-no-files-found: error

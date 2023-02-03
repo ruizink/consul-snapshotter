@@ -1,8 +1,9 @@
 # build
 BUILD_PATH=$(CURDIR)/build
 BIN_PATH=$(BUILD_PATH)/bin
-ARCHIVE_PATH=$(BUILD_PATH)/archive
-ARCHIVE_FORMAT?=zip
+PACKAGE_PATH=$(BUILD_PATH)/package
+CHECKSUM_PATH=$(BUILD_PATH)/checksum
+PACKAGE_FORMAT?=zip
 BIN_NAME=consul-snapshotter
 
 # git
@@ -21,36 +22,37 @@ BUILD_DATE?=$(shell date --iso=seconds)
 T=github.com/ruizink/consul-snapshotter
 LDFLAGS=-X '$(T)/version.Version=$(VERSION)' -X '$(T)/version.BuildDate=$(BUILD_DATE)' -X '$(T)/version.GitCommit=$(GIT_SHA)'
 
-.PHONY: archivedir build archive checksum clean start-docker-env stop-docker-env
+.PHONY: mkdirs build package checksum clean start-docker-env stop-docker-env
 
 build:
 	$(info Building binary for $(OS) $(ARCH))
 	GOOS=$(OS) GOARCH=$(ARCH) go build -ldflags "$(LDFLAGS)" -o $(BIN_TARGET)/ -trimpath -buildvcs=false
 
-archivedir:
-	@mkdir -p $(ARCHIVE_PATH)
+mkdirs:
+	@mkdir -p $(PACKAGE_PATH)
+	@mkdir -p $(CHECKSUM_PATH)
 
-archive: archivedir
+package: mkdirs
 ifneq ($(wildcard $(BIN_TARGET)/$(BIN_NAME)),)
-ifeq ($(ARCHIVE_FORMAT), zip)
+ifeq ($(PACKAGE_FORMAT), zip)
 	$(info Creating zip for $(OS) $(ARCH))
-	zip --junk-paths $(ARCHIVE_PATH)/$(BIN_NAME)_$(VERSION)_$(OS)_$(ARCH).zip $(BIN_TARGET)/$(BIN_NAME)
+	zip --junk-paths $(PACKAGE_PATH)/$(BIN_NAME)_$(VERSION)_$(OS)_$(ARCH).zip $(BIN_TARGET)/$(BIN_NAME)
 else
-ifeq ($(ARCHIVE_FORMAT), tgz)
+ifeq ($(PACKAGE_FORMAT), tgz)
 	$(info Creating tgz for $(OS) $(ARCH))
-	tar -czvf $(ARCHIVE_PATH)/$(BIN_NAME)_$(VERSION)_$(OS)_$(ARCH).tar.gz -C $(BIN_TARGET) $(BIN_NAME)
+	tar -czvf $(PACKAGE_PATH)/$(BIN_NAME)_$(VERSION)_$(OS)_$(ARCH).tar.gz -C $(BIN_TARGET) $(BIN_NAME)
 endif
 endif
 else
-	$(info Could not find a build for $(OS) $(ARCH). Skipping...)
+	$(error Could not find a build for $(OS) $(ARCH))
 endif
 
-checksum: archivedir
-ifneq ($(wildcard $(ARCHIVE_PATH)/$(BIN_NAME)*),)
+checksum: mkdirs
+ifneq ($(wildcard $(PACKAGE_PATH)/$(BIN_NAME)*),)
 	$(info Generating checksum)
-	@cd $(ARCHIVE_PATH) && sha256sum $(BIN_NAME)* > SHA256SUM
+	@cd $(PACKAGE_PATH) && sha256sum $(BIN_NAME)* | tee $(CHECKSUM_PATH)/SHA256SUM
 else
-	$(info Could not find files to checksum. Skipping...)
+	$(error Could not find files to checksum)
 endif
 
 clean:

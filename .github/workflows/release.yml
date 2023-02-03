@@ -5,23 +5,29 @@ on:
     tags: [ 'v*.*.*' ]
 
 jobs:
-  build-artifacts:
-    uses: ./.github/workflows/build.yml
-  package-artifacts:
+  build-package:
+    name: Build and Package
     uses: ./.github/workflows/package.yml
+
   github-release:
     name: Github Release
-    needs: package-artifacts
+    needs: build-package
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - uses: actions/download-artifact@v3
         with:
-          path: build/
+          name: package
+          path: build/package/
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: checksum
+          path: build/checksum/
 
       - uses: ncipollo/release-action@v1
         with:
           name: Release ${{ github.ref_name }}
-          artifacts: build/archive/*
+          artifacts: "build/package/*,build/checksum/*"
           token: ${{ secrets.GITHUB_TOKEN }}
