@@ -9,7 +9,7 @@ on:
     outputs:
       app-version:
         value: ${{ jobs.get-build-info.outputs.app-version }}
-      git-commid:
+      git-commit:
         value: ${{ jobs.get-build-info.outputs.git-commit }}
   workflow_dispatch:
 
