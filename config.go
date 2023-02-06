@@ -157,7 +157,7 @@ func (c *config) loadConfig() error {
 
 	// print version if --version or -V
 	if viper.GetBool("version") {
-		fmt.Fprintf(os.Stderr, "v%s\n", version.Version)
+		fmt.Fprintf(os.Stderr, "Version: %s\n", version.Version)
 		fmt.Fprintf(os.Stderr, "(Build date: %s, Git commit: %s)\n", version.BuildDate, version.GitCommit)
 		os.Exit(0)
 	}
