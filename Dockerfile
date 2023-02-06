@@ -1,7 +1,15 @@
-FROM scratch
+FROM scratch as scratch
 
 ARG TARGETOS TARGETARCH
 
-COPY build/bin/$TARGETOS/$TARGETARCH/consul-snapshotter /
+COPY --chmod=0755 build/bin/$TARGETOS/$TARGETARCH /usr/bin
 
-ENTRYPOINT ["/consul-snapshotter"]
+ENTRYPOINT ["/usr/bin/consul-snapshotter"]
+
+FROM alpine:latest as alpine
+
+ARG TARGETOS TARGETARCH
+
+COPY --chmod=0755 build/bin/$TARGETOS/$TARGETARCH /usr/bin
+
+ENTRYPOINT ["/usr/bin/consul-snapshotter"]

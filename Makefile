@@ -1,5 +1,5 @@
 # build
-BUILD_PATH     := build
+BUILD_PATH     := $(CURDIR)/build
 BIN_PATH       := $(BUILD_PATH)/bin
 PACKAGE_PATH   := $(BUILD_PATH)/package
 CHECKSUM_PATH  := $(BUILD_PATH)/checksum
@@ -27,7 +27,7 @@ LDFLAGS    := -X '$(T)/version.Version=$(VERSION)' -X '$(T)/version.BuildDate=$(
 
 build:
 	$(info Building binary for $(OS) $(ARCH))
-	GOOS=$(OS) GOARCH=$(ARCH) go build -ldflags "$(LDFLAGS)" -o $(BIN_TARGET)/ -trimpath -buildvcs=false
+	GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BIN_TARGET)/ -trimpath -buildvcs=false
 
 build-docker: export OS=linux
 build-docker: build
@@ -35,6 +35,8 @@ build-docker: build
 	docker build \
 		--tag $(BIN_NAME):$(VERSION) \
 		--platform $(OS)/$(ARCH) \
+		--build-arg GO_VERSION=$(GO_VERSION) \
+		--target alpine \
 		.
 
 mkdirs:
