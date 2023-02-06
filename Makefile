@@ -1,32 +1,41 @@
 # build
-BUILD_PATH=$(CURDIR)/build
-BIN_PATH=$(BUILD_PATH)/bin
-PACKAGE_PATH=$(BUILD_PATH)/package
-CHECKSUM_PATH=$(BUILD_PATH)/checksum
-PACKAGE_FORMAT?=zip
-BIN_NAME=consul-snapshotter
+BUILD_PATH     := build
+BIN_PATH       := $(BUILD_PATH)/bin
+PACKAGE_PATH   := $(BUILD_PATH)/package
+CHECKSUM_PATH  := $(BUILD_PATH)/checksum
+PACKAGE_FORMAT ?= zip
+BIN_NAME       := consul-snapshotter
 
 # git
-GIT_SHA?=$(shell git rev-parse --short HEAD)
-GIT_TAG?=$(shell git describe --tags --exact-match "$(GIT_SA)" 2>/dev/null || true)
+GIT_DIRTY := $(shell test -n "`git status --porcelain`" && echo "+CHANGES" || true)
+GIT_SHA   ?= $(shell git rev-parse --short HEAD)
+GIT_TAG   ?= $(shell git describe --tags --exact-match "$(GIT_SA)" 2>/dev/null || true)
 
-# golang
-OS?=linux
-ARCH?=amd64
-BIN_TARGET=$(BIN_PATH)/$(OS)/$(ARCH)
-VERSION?=$(GIT_TAG:v%=%)
+# app
+OS         ?= linux
+ARCH       ?= amd64
+BIN_TARGET := $(BIN_PATH)/$(OS)/$(ARCH)
+VERSION    ?= $(GIT_TAG:v%=%)
 ifeq ($(VERSION),)
-	VERSION=$(GIT_SHA)
+	VERSION := dev
 endif
-BUILD_DATE?=$(shell date --iso=seconds)
-T=github.com/ruizink/consul-snapshotter
-LDFLAGS=-X '$(T)/version.Version=$(VERSION)' -X '$(T)/version.BuildDate=$(BUILD_DATE)' -X '$(T)/version.GitCommit=$(GIT_SHA)'
+BUILD_DATE ?= $(shell date --iso=seconds)
+T          := github.com/ruizink/consul-snapshotter
+LDFLAGS    := -X '$(T)/version.Version=$(VERSION)' -X '$(T)/version.BuildDate=$(BUILD_DATE)' -X '$(T)/version.GitCommit=$(GIT_SHA)$(GIT_DIRTY)'
 
-.PHONY: mkdirs build package checksum clean start-docker-env stop-docker-env
+.PHONY: mkdirs build build-docker package checksum clean start-docker-env stop-docker-env
 
 build:
 	$(info Building binary for $(OS) $(ARCH))
 	GOOS=$(OS) GOARCH=$(ARCH) go build -ldflags "$(LDFLAGS)" -o $(BIN_TARGET)/ -trimpath -buildvcs=false
+
+build-docker: export OS=linux
+build-docker: build
+	$(info Building docker image for $(OS)/$(ARCH))
+	docker build \
+		--tag $(BIN_NAME):$(VERSION) \
+		--platform $(OS)/$(ARCH) \
+		.
 
 mkdirs:
 	@mkdir -p $(PACKAGE_PATH)
