@@ -31,19 +31,19 @@ jobs:
 
     name: "Build ${{ needs.get-build-info.outputs.app-version }}: GO=${{ matrix.go }} OS=${{ matrix.os }} ARCH=${{ matrix.arch }}"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Go ${{ matrix.go }}
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go }}
 
       - name: Build
         run: OS=${{ matrix.os }} ARCH=${{ matrix.arch }} VERSION=${{ needs.get-build-info.outputs.app-version }} GIT_SHA=${{ needs.get-build-info.outputs.git-commit }} make build
       
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: bin
+          name: bin-${{ matrix.os }}_${{ matrix.arch }}
           path: build/bin/**
           if-no-files-found: error
 
@@ -61,18 +61,18 @@ jobs:
     name: "Build ${{ needs.get-build-info.outputs.app-version }}: GO=${{ matrix.go }} OS=${{ matrix.os }} ARCH=${{ matrix.arch }}"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Go ${{ matrix.go }}
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go }}
 
       - name: Build
         run: OS=${{ matrix.os }} ARCH=${{ matrix.arch }} VERSION=${{ needs.get-build-info.outputs.app-version }} GIT_SHA=${{ needs.get-build-info.outputs.git-commit }} make build
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: bin
+          name: bin-${{ matrix.os }}_${{ matrix.arch }}
           path: build/bin/**
           if-no-files-found: error
