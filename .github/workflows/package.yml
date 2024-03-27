@@ -30,7 +30,7 @@ jobs:
       - name: Package
         run: OS=${{ matrix.os }} ARCH=${{ matrix.arch }} VERSION=${{ needs.build.outputs.app-version }} PACKAGE_FORMAT=${{ matrix.format }} make package
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v3
         with:
           name: package
           path: build/package/**
@@ -59,7 +59,7 @@ jobs:
       - name: Package
         run: OS=${{ matrix.os }} ARCH=${{ matrix.arch }} VERSION=${{ needs.build.outputs.app-version }} PACKAGE_FORMAT=${{ matrix.format }} make package
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v3
         with:
           name: package
           path: build/package/**
@@ -83,7 +83,7 @@ jobs:
       - name: Generate checksum
         run: make checksum
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v3
         with:
           name: checksum
           path: build/checksum/**
