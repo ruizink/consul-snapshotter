@@ -32,7 +32,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: package-${{ matrix.os }}_${{ matrix.arch }}
+          name: package
           path: build/package/**
           if-no-files-found: error
 
@@ -61,7 +61,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: package-${{ matrix.os }}_${{ matrix.arch }}
+          name: package
           path: build/package/**
           if-no-files-found: error
 
@@ -85,6 +85,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: checksum-${{ matrix.os }}_${{ matrix.arch }}
+          name: checksum
           path: build/checksum/**
           if-no-files-found: error
