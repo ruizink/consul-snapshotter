@@ -11,7 +11,7 @@ replace github.com/ruizink/consul-snapshotter/logger => ./logger
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.6.1
-	github.com/hashicorp/consul v1.13.7
+	github.com/hashicorp/consul v1.14.5
 	github.com/hashicorp/consul/api v1.18.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/rboyer/safeio v0.2.1
@@ -26,7 +26,6 @@ require (
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/fatih/color v1.14.1 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
-	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
@@ -38,7 +37,6 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/raft v1.3.11 // indirect
 	github.com/hashicorp/serf v0.10.1 // indirect
-	github.com/hashicorp/yamux v0.0.0-20211028200310-0bc27b27de87 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
