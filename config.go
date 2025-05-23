@@ -29,9 +29,10 @@ type localOutputConfig struct {
 type azureOutputConfig struct {
 	ContainerName    string        `json:"container-name"`
 	ContainerPath    string        `json:"container-path"`
-	StorageAccount   string        `json:"azure-storage-account"`
-	StorageAccessKey string        `json:"azure-storage-access-key"`
-	StorageSASToken  string        `json:"azure-storage-sas-token"`
+	StorageAccount   string        `json:"storage-account"`
+	CloudDomain      string        `json:"cloud-domain"`
+	StorageAccessKey string        `json:"storage-access-key"`
+	StorageSASToken  string        `json:"storage-sas-token"`
 	CreateContainer  bool          `json:"create-container"`
 	BlockSize        int64         `json:"block-size"`
 	Parallelism      uint16        `json:"parallelism"`
@@ -107,6 +108,7 @@ func (c *config) loadConfig() error {
 	viper.SetDefault("local.destination-path", ".")
 	viper.SetDefault("local.create-destination", false)
 	viper.SetDefault("local.retention-period", 0)
+	viper.SetDefault("azure-blob.cloud-domain", "blob.core.windows.net")
 	viper.SetDefault("azure-blob.create-container", false)
 	viper.SetDefault("azure-blob.block-size", 4*1024*1024)
 	viper.SetDefault("azure-blob.parallelism", 16)
@@ -128,6 +130,7 @@ func (c *config) loadConfig() error {
 	regFlagString("azure-blob.container-name", "", "Name of the Azure Blob container to use")
 	regFlagString("azure-blob.container-path", "", "Path to use inside the Azure Blob container")
 	regFlagString("azure-blob.storage-account", "", "Azure Blob storage account to use")
+	regFlagString("azure-blob.cloud-domain", viper.GetString("azure-blob.cloud-domain"), "The domain for the Azure Blob service, depending on the cloud you are using")
 	regFlagString("azure-blob.storage-access-key", "", "Azure Blob storage access key to use (mutually exclusive with azure-blob.storage-sas-token)")
 	regFlagString("azure-blob.storage-sas-token", "", "Azure Blob storage SAS token to use (mutually exclusive with azure-blob.storage-access-key)")
 	regFlagBool("azure-blob.create-container", viper.GetBool("azure-blob.create-container"), "Behavior when the container-name does not exist (default: false)")
@@ -165,12 +168,14 @@ func (c *config) loadConfig() error {
 	// bind env vars
 	viper.BindEnv("consul.url", "CONSUL_HTTP_ADDR")
 	viper.BindEnv("consul.token", "CONSUL_HTTP_TOKEN")
+	viper.BindEnv("azure-blob.cloud-domain", "AZURE_CLOUD_DOMAIN")
 	viper.BindEnv("azure-blob.storage-account", "AZURE_STORAGE_ACCOUNT")
 	viper.BindEnv("azure-blob.storage-access-key", "AZURE_STORAGE_ACCESS_KEY")
 	viper.BindEnv("azure-blob.storage-sas-token", "AZURE_STORAGE_SAS_TOKEN")
 
 	// load config from file
 	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
 	viper.AddConfigPath(viper.GetString("configdir"))
 
 	if err := viper.ReadInConfig(); err != nil {
@@ -189,6 +194,7 @@ func (c *config) loadConfig() error {
 	azureOutputConfig.ContainerName = viper.GetString("azure-blob.container-name")
 	azureOutputConfig.ContainerPath = viper.GetString("azure-blob.container-path")
 	azureOutputConfig.StorageAccount = viper.GetString("azure-blob.storage-account")
+	azureOutputConfig.CloudDomain = viper.GetString("azure-blob.cloud-domain")
 	azureOutputConfig.StorageAccessKey = viper.GetString("azure-blob.storage-access-key")
 	azureOutputConfig.StorageSASToken = viper.GetString("azure-blob.storage-sas-token")
 	azureOutputConfig.CreateContainer = viper.GetBool("azure-blob.create-container")

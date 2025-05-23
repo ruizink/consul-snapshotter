@@ -7,6 +7,8 @@ on:
     branches: [ master ]
   workflow_call:
     outputs:
+      app-name:
+        value: ${{ jobs.get-build-info.outputs.app-name }}
       app-version:
         value: ${{ jobs.get-build-info.outputs.app-version }}
       git-commit:
@@ -41,10 +43,10 @@ jobs:
       - name: Build
         run: OS=${{ matrix.os }} ARCH=${{ matrix.arch }} VERSION=${{ needs.get-build-info.outputs.app-version }} GIT_SHA=${{ needs.get-build-info.outputs.git-commit }} make build
       
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: bin
-          path: build/bin/**
+          name: "${{ needs.get-build-info.outputs.app-name }}_${{ matrix.os }}_${{ matrix.arch }}"
+          path: "build/bin/${{ needs.get-build-info.outputs.app-name }}_${{ matrix.os }}_${{ matrix.arch }}"
           if-no-files-found: error
 
   build-darwin:
@@ -71,8 +73,8 @@ jobs:
       - name: Build
         run: OS=${{ matrix.os }} ARCH=${{ matrix.arch }} VERSION=${{ needs.get-build-info.outputs.app-version }} GIT_SHA=${{ needs.get-build-info.outputs.git-commit }} make build
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: bin
-          path: build/bin/**
+          name: "${{ needs.get-build-info.outputs.app-name }}_${{ matrix.os }}_${{ matrix.arch }}"
+          path: "build/bin/${{ needs.get-build-info.outputs.app-name }}_${{ matrix.os }}_${{ matrix.arch }}"
           if-no-files-found: error

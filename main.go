@@ -172,6 +172,7 @@ func processOutputs(snap string, c *config) error {
 					ContainerPath:    c.AzureOutputConfig.ContainerPath,
 					Filename:         outputFileName,
 					StorageAccount:   c.AzureOutputConfig.StorageAccount,
+					CloudDomain:      c.AzureOutputConfig.CloudDomain,
 					StorageAccessKey: c.AzureOutputConfig.StorageAccessKey,
 					StorageSASToken:  c.AzureOutputConfig.StorageSASToken,
 					CreateContainer:  c.AzureOutputConfig.CreateContainer,
