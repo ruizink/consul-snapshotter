@@ -5,29 +5,30 @@ on:
     tags: [ 'v*.*.*' ]
 
 jobs:
-  build-package:
-    name: Build and Package
-    uses: ./.github/workflows/package.yml
+  checksum:
+    name: Build and Release
+    uses: ./.github/workflows/checksum.yml
 
   github-release:
     name: Github Release
-    needs: build-package
+    permissions:
+      packages: write
+      contents: write
+    needs: checksum
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: package
-          path: build/package/
+          pattern: "*"
+          path: release_files/
+          merge-multiple: true
 
-      - uses: actions/download-artifact@v3
+      - uses: "marvinpinto/action-automatic-releases@latest"
         with:
-          name: checksum
-          path: build/checksum/
-
-      - uses: ncipollo/release-action@v1
-        with:
-          name: Release ${{ github.ref_name }}
-          artifacts: "build/package/*,build/checksum/*"
-          token: ${{ secrets.GITHUB_TOKEN }}
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          title: Release ${{ github.ref_name }}
+          prerelease: false
+          files: |
+            release_files/*

@@ -2,7 +2,7 @@ version: '3'
 
 services:
   consul:
-    image: consul:latest
+    image: hashicorp/consul:latest
     hostname: consul
     restart: always
     command: "agent -server -bootstrap -ui -client=0.0.0.0"

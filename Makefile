@@ -1,9 +1,7 @@
 # build
 BUILD_PATH     := $(CURDIR)/build
 BIN_PATH       := $(BUILD_PATH)/bin
-PACKAGE_PATH   := $(BUILD_PATH)/package
 CHECKSUM_PATH  := $(BUILD_PATH)/checksum
-PACKAGE_FORMAT ?= zip
 BIN_NAME       := consul-snapshotter
 
 # git
@@ -14,7 +12,6 @@ GIT_TAG   ?= $(shell git describe --tags --exact-match "$(GIT_SA)" 2>/dev/null |
 # app
 OS         ?= linux
 ARCH       ?= amd64
-BIN_TARGET := $(BIN_PATH)/$(OS)/$(ARCH)
 VERSION    ?= $(GIT_TAG:v%=%)
 ifeq ($(VERSION),)
 	VERSION := dev
@@ -23,11 +20,11 @@ BUILD_DATE ?= $(shell date --iso=seconds)
 T          := github.com/ruizink/consul-snapshotter
 LDFLAGS    := -X '$(T)/version.Version=$(VERSION)' -X '$(T)/version.BuildDate=$(BUILD_DATE)' -X '$(T)/version.GitCommit=$(GIT_SHA)$(GIT_DIRTY)'
 
-.PHONY: mkdirs build build-docker package checksum clean start-docker-env stop-docker-env
+.PHONY: mkdirs build build-docker checksum clean start-docker-env stop-docker-env
 
 build:
 	$(info Building binary for $(OS) $(ARCH))
-	GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BIN_TARGET)/ -trimpath -buildvcs=false
+	GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BIN_PATH)/$(BIN_NAME)_$(OS)_$(ARCH) -trimpath -buildvcs=false
 
 build-docker: export OS=linux
 build-docker: build
@@ -40,30 +37,14 @@ build-docker: build
 		.
 
 mkdirs:
-	@mkdir -p $(PACKAGE_PATH)
 	@mkdir -p $(CHECKSUM_PATH)
 
-package: mkdirs
-ifneq ($(wildcard $(BIN_TARGET)/$(BIN_NAME)),)
-ifeq ($(PACKAGE_FORMAT), zip)
-	$(info Creating zip for $(OS) $(ARCH))
-	zip --junk-paths $(PACKAGE_PATH)/$(BIN_NAME)_$(VERSION)_$(OS)_$(ARCH).zip $(BIN_TARGET)/$(BIN_NAME)
-else
-ifeq ($(PACKAGE_FORMAT), tgz)
-	$(info Creating tgz for $(OS) $(ARCH))
-	tar -czvf $(PACKAGE_PATH)/$(BIN_NAME)_$(VERSION)_$(OS)_$(ARCH).tar.gz -C $(BIN_TARGET) $(BIN_NAME)
-endif
-endif
-else
-	$(error Could not find a build for $(OS) $(ARCH))
-endif
-
 checksum: mkdirs
-ifneq ($(wildcard $(PACKAGE_PATH)/$(BIN_NAME)*),)
+ifneq ($(wildcard $(BIN_PATH)/$(BIN_NAME)*),)
 	$(info Generating checksum)
-	@cd $(PACKAGE_PATH) && sha256sum $(BIN_NAME)* | tee $(CHECKSUM_PATH)/SHA256SUM
+	@cd $(BIN_PATH) && sha256sum $(BIN_NAME)* | tee $(CHECKSUM_PATH)/SHA256SUM
 else
-	$(error Could not find files to checksum)
+	$(error Could not find files to checksum with the following pattern: $(BIN_PATH)/$(BIN_NAME)*)
 endif
 
 clean:
