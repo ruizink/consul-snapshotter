@@ -4,29 +4,30 @@
 # log-level: info
 
 # consul:
-#     url: http://127.0.0.1:8500
-#     token: ""
-#     lock-key: "consul-snapshotter/.lock"
-#     lock-timeout: "10m"
+#   url: http://127.0.0.1:8500
+#   token: ""
+#   lock-key: "consul-snapshotter/.lock"
+#   lock-timeout: "10m"
 
 # local:
-#     destination-path: "/tmp/snapshots"
-#     create-destination: false
-#     retention-period: 24h
+#   destination-path: "/tmp/snapshots"
+#   create-destination: false
+#   retention-period: 24h
 
 # azure-blob:
-#     container-name: "container_name"
-#     container-path: "consul/snapshots"
-#     storage-account: "azure_account"
-#     storage-access-key: "" #
-#     storage-sas-token: ""  # Use either of these, SAS token takes precedence
-#     create-container: true
-#     block-size: 100000
-#     parallelism: 2
-#     emulated: true
-#     emulator-url: http://127.0.0.1:10000
-#     retention-period: 24h
+#   container-name: "container_name"
+#   container-path: "consul/snapshots"
+#   storage-account: "azure_account"
+#   cloud-domain: "blob.core.windows.net"
+#   storage-access-key: "" #
+#   storage-sas-token: ""  # Use either of these, SAS token takes precedence
+#   create-container: true
+#   block-size: 100000
+#   parallelism: 2
+#   emulated: true
+#   emulator-url: http://127.0.0.1:10000
+#   retention-period: 24h
 
 # outputs:
-#     - "local"
-#     - "azure_blob"
+#   - "local"
+#   - "azure_blob"

@@ -21,6 +21,7 @@ type AzureConfig struct {
 	ContainerPath    string
 	Filename         string
 	StorageAccount   string
+	CloudDomain      string
 	StorageAccessKey string
 	StorageSASToken  string
 	CreateContainer  bool
@@ -54,7 +55,7 @@ func NewAzure(config *AzureConfig) (*Azure, error) {
 		if config.Emulated {
 			azURL, _ = url.Parse(fmt.Sprintf("%s/%s", config.EmulatorUrl, config.StorageAccount))
 		} else {
-			azURL, _ = url.Parse(fmt.Sprintf("https://%s.blob.core.windows.net", config.StorageAccount))
+			azURL, _ = url.Parse(fmt.Sprintf("https://%s.%s", config.StorageAccount, config.CloudDomain))
 		}
 		logger.Debug("Using Azure Blob URL: ", azURL.String())
 		azclient, err = azblob.NewClientWithNoCredential(azURL.String(), nil)
@@ -62,7 +63,7 @@ func NewAzure(config *AzureConfig) (*Azure, error) {
 		if config.Emulated {
 			azURL, _ = url.Parse(fmt.Sprintf("%s/%s/?%s", config.EmulatorUrl, config.StorageAccount, config.StorageSASToken))
 		} else {
-			azURL, _ = url.Parse(fmt.Sprintf("https://%s.blob.core.windows.net/?%s", config.StorageAccount, config.StorageSASToken))
+			azURL, _ = url.Parse(fmt.Sprintf("https://%s.%s/?%s", config.StorageAccount, config.CloudDomain, config.StorageSASToken))
 		}
 		cred, cerr := azblob.NewSharedKeyCredential(config.StorageAccount, config.StorageAccessKey)
 		if cerr != nil {
