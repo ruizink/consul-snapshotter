@@ -52,6 +52,7 @@ Usage:
 ```text
 Usage of consul-snapshotter:
       --azure-blob.block-size int              Size in bytes of each block (default 4194304)
+      --azure-blob.cloud-domain string         The domain for the Azure Blob service, depending on the cloud you are using (default "blob.core.windows.net")
       --azure-blob.container-name string       Name of the Azure Blob container to use
       --azure-blob.container-path string       Path to use inside the Azure Blob container
       --azure-blob.create-container            Behavior when the container-name does not exist (default: false)
@@ -76,4 +77,5 @@ Usage of consul-snapshotter:
       --local.retention-period duration        Duration that Local snapshots need to be retained (default: "0s" - keep forever)
       --log-level string                       Verbosity (info, warn, debug) of the log (default "info")
   -o, --outputs strings                        List of outputs to push the snapshot to (default [local])
+  -V, --version                                Prints the version
 ```
