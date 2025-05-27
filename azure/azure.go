@@ -53,17 +53,17 @@ func NewAzure(config *AzureConfig) (*Azure, error) {
 	// create azure client
 	if config.StorageSASToken != "" {
 		if config.Emulated {
-			azURL, _ = url.Parse(fmt.Sprintf("%s/%s", config.EmulatorUrl, config.StorageAccount))
+			azURL, _ = url.Parse(fmt.Sprintf("%s/%s/?%s", config.EmulatorUrl, config.StorageAccount, config.StorageSASToken))
 		} else {
-			azURL, _ = url.Parse(fmt.Sprintf("https://%s.%s", config.StorageAccount, config.CloudDomain))
+			azURL, _ = url.Parse(fmt.Sprintf("https://%s.%s/?%s", config.StorageAccount, config.CloudDomain, config.StorageSASToken))
 		}
 		logger.Debug("Using Azure Blob URL: ", azURL.String())
 		azclient, err = azblob.NewClientWithNoCredential(azURL.String(), nil)
 	} else {
 		if config.Emulated {
-			azURL, _ = url.Parse(fmt.Sprintf("%s/%s/?%s", config.EmulatorUrl, config.StorageAccount, config.StorageSASToken))
+			azURL, _ = url.Parse(fmt.Sprintf("%s/%s/", config.EmulatorUrl, config.StorageAccount))
 		} else {
-			azURL, _ = url.Parse(fmt.Sprintf("https://%s.%s/?%s", config.StorageAccount, config.CloudDomain, config.StorageSASToken))
+			azURL, _ = url.Parse(fmt.Sprintf("https://%s.%s/", config.StorageAccount, config.CloudDomain))
 		}
 		cred, cerr := azblob.NewSharedKeyCredential(config.StorageAccount, config.StorageAccessKey)
 		if cerr != nil {
