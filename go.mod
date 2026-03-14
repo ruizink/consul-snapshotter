@@ -1,6 +1,6 @@
 module github.com/ruizink/consul-snapshotter
 
-go 1.25.3
+go 1.25.7
 
 replace github.com/ruizink/consul-snapshotter/consul => ./consul
 
@@ -11,8 +11,8 @@ replace github.com/ruizink/consul-snapshotter/logger => ./logger
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.1
-	github.com/hashicorp/consul v1.22.0
-	github.com/hashicorp/consul/api v1.33.0
+	github.com/hashicorp/consul v1.22.5
+	github.com/hashicorp/consul/api v1.33.2
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/rboyer/safeio v0.2.3
 	github.com/robfig/cron v1.2.0
@@ -49,9 +49,9 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20250911091902-df9299821621 // indirect
-	golang.org/x/net v0.44.0 // indirect
-	golang.org/x/sys v0.36.0 // indirect
-	golang.org/x/text v0.29.0 // indirect
+	golang.org/x/net v0.47.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/text v0.31.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
